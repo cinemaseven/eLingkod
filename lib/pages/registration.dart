@@ -5,17 +5,15 @@ import 'package:elingkod/pages/login.dart';
 import 'package:elingkod/pages/signup.dart';
 import 'package:flutter/material.dart';
 
-class Registration extends StatelessWidget{
+class Registration extends StatelessWidget {
   const Registration({super.key});
 
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
-    
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: ElementColors.primary,
-      ),
+      appBar: AppBar(backgroundColor: ElementColors.primary),
 
       body: Stack(
         alignment: Alignment.center,
@@ -26,9 +24,10 @@ class Registration extends StatelessWidget{
             child: ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 130, minHeight: 300),
               child: Image.asset(
-                "assets/images/logo.png", 
-                width: media.width * 0.7, 
-                height: media.height * 0.7,),
+                "assets/images/logo.png",
+                width: media.width * 0.8,
+                height: media.height * 0.8,
+              ),
             ),
           ),
 
@@ -36,7 +35,7 @@ class Registration extends StatelessWidget{
           Align(
             alignment: Alignment.bottomCenter,
             child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: 200, maxWidth: 300),
+              constraints: BoxConstraints(minWidth: 200, maxWidth: 290),
               child: Padding(
                 padding: const EdgeInsets.only(
                   bottom: 100,
@@ -46,9 +45,12 @@ class Registration extends StatelessWidget{
                   children: [
                     // log in button
                     Buttons(
-                      title: "Log In",
+                      title: "Sign Up",
                       onClick: () {
-                        Navigator.push(context, CustomPageRoute(page: Login()));
+                        Navigator.push(
+                          context,
+                          CustomPageRoute(page: Signup()),
+                        );
                       },
                     ),
                     const SizedBox(height: 20),
@@ -83,13 +85,10 @@ class Registration extends StatelessWidget{
 
                     // sign up button
                     Buttons(
-                      title: "Sign Up",
+                      title: "Log In",
                       type: BtnType.txtPrimary,
                       onClick: () {
-                        Navigator.push(
-                          context,
-                          CustomPageRoute(page: Signup()),
-                        );
+                        Navigator.push(context, CustomPageRoute(page: Login()));
                       },
                     ),
                   ],

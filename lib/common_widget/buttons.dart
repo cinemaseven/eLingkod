@@ -26,13 +26,19 @@ class Buttons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: width,   
-      height: height, 
+      width: width,
+      height: height,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: type == BtnType.bgPrimary ? ElementColors.primary : ElementColors.secondary,
-          foregroundColor: type == BtnType.bgPrimary ? ElementColors.tertiary : ElementColors.primary,
-          minimumSize: const Size.fromHeight(60), // default height if not overridden
+          backgroundColor: type == BtnType.bgPrimary
+              ? ElementColors.primary
+              : ElementColors.secondary,
+          foregroundColor: type == BtnType.bgPrimary
+              ? ElementColors.tertiary
+              : ElementColors.primary,
+          minimumSize: const Size.fromHeight(
+            60,
+          ), // default height if not overridden
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
             side: type == BtnType.bgPrimary
@@ -46,7 +52,8 @@ class Buttons extends StatelessWidget {
           title,
           style: TextStyle(
             fontSize: fontSize ?? 20,
-            fontWeight: FontWeight.w600,
+            // fontWeight: FontWeight.w600,
+            color: ElementColors.fontColor2, // added this
           ),
         ),
       ),
