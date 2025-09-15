@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/pages/registration.dart';
+import 'package:flutter/material.dart';
 // import 'package:elingkod/pages/profile.dart';      
 // import 'package:elingkod/pages/request_status.dart';
 // import 'package:elingkod/pages/barangay_clearance.dart';
@@ -14,6 +14,8 @@ class Hamburger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var media = MediaQuery.of(context).size;
+
     return Drawer(
       backgroundColor: ElementColors.primary,
       child: ListView(
@@ -27,16 +29,16 @@ class Hamburger extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircleAvatar(
-                  radius: 40,
+                  radius: media.width * 0.1,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 50, color: Colors.grey),
+                  child: Icon(Icons.person, size: media.width * 0.12, color: Colors.grey),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   "Hi, [Name] !",
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: media.width * 0.04,
                   ),
                   textAlign: TextAlign.center,
                 ),

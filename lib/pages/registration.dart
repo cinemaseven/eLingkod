@@ -38,7 +38,7 @@ class Registration extends StatelessWidget {
               constraints: BoxConstraints(minWidth: 200, maxWidth: 290),
               child: Padding(
                 padding: const EdgeInsets.only(
-                  bottom: 100,
+                  bottom: 150,
                 ), // distance from bottom
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -86,7 +86,8 @@ class Registration extends StatelessWidget {
                     // sign up button
                     Buttons(
                       title: "Log In",
-                      type: BtnType.txtPrimary,
+                      customFontColor: ElementColors.secondary,
+                      type: BtnType.lightSecondary,
                       onClick: () {
                         Navigator.push(context, CustomPageRoute(page: Login()));
                       },

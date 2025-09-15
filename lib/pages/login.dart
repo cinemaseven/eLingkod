@@ -1,7 +1,9 @@
 import 'package:elingkod/common_style/colors_extension.dart';
+import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/pages/signup.dart';
+import 'package:elingkod/common_widget/textfields.dart';
 import 'package:elingkod/pages/home.dart';
+import 'package:elingkod/pages/signup.dart';
 import 'package:flutter/material.dart';
 
 
@@ -26,6 +28,7 @@ class _LoginState extends State<Login> {
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: ElementColors.primary,
         iconTheme: IconThemeData(color: ElementColors.fontColor2),
       ),
@@ -63,86 +66,40 @@ class _LoginState extends State<Login> {
                     ),
                     const SizedBox(height: 20),
                     if (useEmail)
-                      TextField(
+                      TxtField(
+                        type: TxtFieldType.regis,
                         controller: email,
-                        decoration: InputDecoration(
-                          hintText: "Email",
-                          filled: true,
-                          fillColor: ElementColors.fontColor2,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0,
-                            horizontal: 15,
-                          ),
-                        ),
-                        style: const TextStyle(fontSize: 13),
+                        hint: "Email",
                       )
                     else
-                      TextField(
+                      TxtField(
+                        type: TxtFieldType.regis,
                         controller: contactNumber,
-                        decoration: InputDecoration(
-                          hintText: "Contact Number",
-                          filled: true,
-                          fillColor: ElementColors.fontColor2,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0,
-                            horizontal: 15,
-                          ),
-                        ),
-                        style: const TextStyle(fontSize: 13),
+                        hint: "Contact Number",
                       ),
+
                     const SizedBox(height: 15),
-                    TextField(
-                      controller: password,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: "Password",
-                        filled: true,
-                        fillColor: ElementColors.fontColor2,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 0,
-                          horizontal: 15,
-                        ),
+                    TxtField(
+                        type: TxtFieldType.regis,
+                        controller: password,
+                        hint: "Password",
+                        obscure: true,
                       ),
-                      style: const TextStyle(fontSize: 13),
-                    ),
+
                     const SizedBox(height: 40),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ElementColors.secondary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            CustomPageRoute(page: const Home()), //
-                          );
+                      child:  Buttons(
+                        title: "Log In",
+                        type: BtnType.secondary,
+                        fontSize: 16,
+                        height: 50,
+                        onClick: () {
+                          Navigator.push(context, CustomPageRoute(page: Home()),);
                         },
-                        child: Text(
-                          "Log In",
-                          style: TextStyle(
-                            color: ElementColors.fontColor2,
-                            fontSize: 16,
-                          ),
-                        ),
                       ),
                     ),
+                    
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -166,33 +123,23 @@ class _LoginState extends State<Login> {
                         ),
                       ],
                     ),
+                    
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ElementColors.tertiary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            useEmail = !useEmail;
-                          });
+                      child:  Buttons(
+                        title: useEmail
+                          ? "Log in using contact number"
+                          : "Log in using email",
+                        type: BtnType.tertiary,
+                        fontSize: 16,
+                        height: 50,
+                        onClick: () {
+                          setState(() { useEmail = !useEmail; });
                         },
-                        child: Text(
-                          useEmail
-                              ? "Login using contact number"
-                              : "Login using email",
-                          style: TextStyle(
-                            color: ElementColors.fontColor2,
-                            fontSize: 15,
-                          ),
-                        ),
                       ),
                     ),
+                    
                     const SizedBox(height: 20),
                     GestureDetector(
                       onTap: () {

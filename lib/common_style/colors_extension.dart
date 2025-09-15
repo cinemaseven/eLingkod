@@ -7,5 +7,6 @@ class ElementColors {
   static Color get placeholder => const Color(0xFFB4B4B4);
   static Color get fontColor1 => const Color(0xFF000000);
   static Color get fontColor2 => const Color(0xFFFFFFFF);
-  static Color get shadow => const Color(0xFF000000).withOpacity(0.1);
+  static Color get shadow => const Color(0xFF000000).withOpacity(0.3);
+  static Color get lightSecondary => const Color(0xFFF3D9D0);
 }

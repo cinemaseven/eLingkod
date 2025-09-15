@@ -1,7 +1,7 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:flutter/material.dart';
 
-enum BtnType { bgPrimary, txtPrimary }
+enum BtnType { primary, secondary, tertiary, lightSecondary }
 
 class Buttons extends StatelessWidget {
   final VoidCallback onClick;
@@ -11,49 +11,62 @@ class Buttons extends StatelessWidget {
   final double? fontSize;
   final double? width;
   final double? height;
+  final Color? customFontColor;
 
   const Buttons({
     super.key,
     required this.title,
     required this.onClick,
-    this.type = BtnType.bgPrimary,
+    this.type = BtnType.primary,
     this.icon,
     this.fontSize,
     this.width,
     this.height,
+    this.customFontColor,
   });
+
+  Color _getBackgroundColor() {
+    switch (type) {
+      case BtnType.primary:
+        return ElementColors.primary;
+      case BtnType.secondary:
+        return ElementColors.secondary;
+      case BtnType.tertiary:
+        return ElementColors.tertiary;
+      case BtnType.lightSecondary:
+        return ElementColors.lightSecondary;
+    }
+  }
+
+  // Default font color = white, but allow override
+  Color _getFontColor() {
+    return customFontColor ?? ElementColors.fontColor2;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = _getBackgroundColor();
+    final textColor = _getFontColor();
+
     return SizedBox(
       width: width,
       height: height,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: type == BtnType.bgPrimary
-              ? ElementColors.primary
-              : ElementColors.secondary,
-          foregroundColor: type == BtnType.bgPrimary
-              ? ElementColors.tertiary
-              : ElementColors.primary,
-          minimumSize: const Size.fromHeight(
-            60,
-          ), // default height if not overridden
+          backgroundColor: bgColor,
+          foregroundColor: textColor, // ripple + icon color
+          minimumSize: const Size.fromHeight(60),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
-            side: type == BtnType.bgPrimary
-                ? BorderSide.none
-                : BorderSide(color: ElementColors.primary, width: 1),
           ),
         ),
         onPressed: onClick,
-        icon: icon != null ? Icon(icon, size: 20) : const SizedBox.shrink(),
+        icon: icon != null ? Icon(icon, size: 20, color: Colors.white) : const SizedBox.shrink(),
         label: Text(
           title,
           style: TextStyle(
             fontSize: fontSize ?? 20,
-            // fontWeight: FontWeight.w600,
-            color: ElementColors.fontColor2, // added this
+            color: textColor, // always white text
           ),
         ),
       ),
