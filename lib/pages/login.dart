@@ -1,7 +1,9 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/pages/signup.dart';
+import 'package:elingkod/pages/home.dart';
 import 'package:flutter/material.dart';
+
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -22,6 +24,7 @@ class _LoginState extends State<Login> {
     var media = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
         backgroundColor: ElementColors.primary,
         iconTheme: IconThemeData(color: ElementColors.fontColor2),
@@ -125,7 +128,12 @@ class _LoginState extends State<Login> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            CustomPageRoute(page: const Home()), //
+                          );
+                        },
                         child: Text(
                           "Log In",
                           style: TextStyle(

@@ -13,8 +13,8 @@ class Registration extends StatelessWidget {
     var media = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(backgroundColor: ElementColors.primary),
-
       body: Stack(
         alignment: Alignment.center,
         children: [

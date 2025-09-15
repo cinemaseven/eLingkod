@@ -1,6 +1,7 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/pages/login.dart';
+import 'package:elingkod/pages/home.dart';
 import 'package:flutter/material.dart';
 
 class Signup extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SignupState extends State<Signup> {
     var media = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
         backgroundColor: ElementColors.primary,
         iconTheme: IconThemeData(color: ElementColors.fontColor2),
@@ -151,7 +153,12 @@ class _SignupState extends State<Signup> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            CustomPageRoute(page: const Home()), //
+                          );
+                        },
                         child: Text(
                           "Sign Up",
                           style: TextStyle(
