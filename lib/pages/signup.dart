@@ -34,14 +34,14 @@ class _SignupState extends State<Signup> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 5),
+          SizedBox(height: media.height * 0.02),
           Center(
             child: Image.asset(
               "assets/images/logo.png",
               width: media.width * 0.5,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: media.height * 0.03),
           Expanded(
             child: Container(
               width: double.infinity,
@@ -52,25 +52,19 @@ class _SignupState extends State<Signup> {
                   topRight: Radius.circular(30),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(
-                45,
-                20,
-                45,
-                0,
-              ), // padding of the boxes email, pass etc.
+              padding: EdgeInsets.symmetric(
+                  horizontal: media.width * 0.1, vertical: media.height * 0.03),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    const SizedBox(height: 0),
                     Text(
                       "Sign Up",
                       style: TextStyle(
-                        fontSize: 30,
-                        // fontWeight: FontWeight.normal,
+                        fontSize: media.width * 0.08,
                         color: ElementColors.fontColor2,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: media.height * 0.04),
                     if (useEmail)
                       TxtField(
                         type: TxtFieldType.regis,
@@ -78,43 +72,42 @@ class _SignupState extends State<Signup> {
                         hint: "Email",
                       )
                     else
-                    TxtField(
+                      TxtField(
                         type: TxtFieldType.regis,
                         controller: contactNumber,
                         hint: "Contact Number",
                       ),
-                    
-                    const SizedBox(height: 15),
+                    SizedBox(height: media.height * 0.02),
                     TxtField(
-                        type: TxtFieldType.regis,
-                        controller: password,
-                        hint: "Password",
-                        obscure: true,
-                      ),
-                    
-                    const SizedBox(height: 15),
+                      type: TxtFieldType.regis,
+                      controller: password,
+                      hint: "Password",
+                      obscure: true,
+                    ),
+                    SizedBox(height: media.height * 0.02),
                     TxtField(
-                        type: TxtFieldType.regis,
-                        controller: rePassword,
-                        hint: "Re-enter password",
-                        obscure: true,
-                      ),
-                    
-                    const SizedBox(height: 40),
+                      type: TxtFieldType.regis,
+                      controller: rePassword,
+                      hint: "Re-enter password",
+                      obscure: true,
+                    ),
+                    SizedBox(height: media.height * 0.05),
                     SizedBox(
                       width: double.infinity,
-                      child:  Buttons(
+                      child: Buttons(
                         title: "Sign Up",
                         type: BtnType.secondary,
-                        fontSize: 16,
-                        height: 50,
+                        fontSize: media.width * 0.04,
+                        height: media.height * 0.065,
                         onClick: () {
-                          Navigator.push(context, CustomPageRoute(page: ProfileInfo()),);
+                          Navigator.push(
+                            context,
+                            CustomPageRoute(page: ProfileInfo()),
+                          );
                         },
                       ),
                     ),
-                    
-                    const SizedBox(height: 10),
+                    SizedBox(height: media.height * 0.02),
                     Row(
                       children: [
                         Expanded(
@@ -137,26 +130,30 @@ class _SignupState extends State<Signup> {
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 10),
+                    SizedBox(height: media.height * 0.02),
                     SizedBox(
                       width: double.infinity,
-                      child:  Buttons(
+                      child: Buttons(
                         title: useEmail
-                          ? "Sign up using contact number"
-                          : "Sign up using email",
+                            ? "Sign up using contact number"
+                            : "Sign up using email",
                         type: BtnType.tertiary,
-                        fontSize: 16,
-                        height: 50,
+                        fontSize: media.width * 0.04,
+                        height: media.height * 0.065,
                         onClick: () {
-                          setState(() { useEmail = !useEmail; });
+                          setState(() {
+                            useEmail = !useEmail;
+                          });
                         },
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: media.height * 0.03),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context, CustomPageRoute(page: Login()));
+                        Navigator.push(
+                          context,
+                          CustomPageRoute(page: Login()),
+                        );
                       },
                       child: RichText(
                         text: TextSpan(
@@ -164,6 +161,7 @@ class _SignupState extends State<Signup> {
                           style: TextStyle(
                             color: ElementColors.fontColor2,
                             fontWeight: FontWeight.normal,
+                            fontSize: media.width * 0.035,
                           ),
                           children: [
                             TextSpan(
@@ -171,6 +169,7 @@ class _SignupState extends State<Signup> {
                               style: TextStyle(
                                 color: ElementColors.fontColor2,
                                 fontWeight: FontWeight.bold,
+                                fontSize: media.width * 0.035,
                               ),
                             ),
                           ],

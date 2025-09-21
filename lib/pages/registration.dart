@@ -10,7 +10,11 @@ class Registration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var media = MediaQuery.of(context).size;
+    final media = MediaQuery.of(context).size;
+    final scaleFactor = MediaQuery.textScaleFactorOf(context);
+
+    // Helper for consistent scaling
+    double scaled(double base) => base * media.width * scaleFactor;
 
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
@@ -18,11 +22,14 @@ class Registration extends StatelessWidget {
       body: Stack(
         alignment: Alignment.center,
         children: [
-          // logo
+          // Logo
           Positioned(
             top: media.height * -0.1,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 130, minHeight: 300),
+              constraints: BoxConstraints(
+                minWidth: media.width * 0.3,
+                minHeight: media.height * 0.3,
+              ),
               child: Image.asset(
                 "assets/images/logo.png",
                 width: media.width * 0.8,
@@ -31,21 +38,22 @@ class Registration extends StatelessWidget {
             ),
           ),
 
-          // log in button
+          // Buttons
           Align(
             alignment: Alignment.bottomCenter,
             child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: 200, maxWidth: 290),
+              constraints: BoxConstraints(
+                minWidth: media.width * 0.5,
+                maxWidth: media.width * 0.8,
+              ),
               child: Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 150,
-                ), // distance from bottom
+                padding: EdgeInsets.only(bottom: media.height * 0.18),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // log in button
                     Buttons(
                       title: "Sign Up",
+                      fontSize: scaled(0.045), // scaled font
                       onClick: () {
                         Navigator.push(
                           context,
@@ -53,43 +61,46 @@ class Registration extends StatelessWidget {
                         );
                       },
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: media.height * 0.025),
 
-                    // divider "or"
+                    // Divider "or"
                     Row(
                       children: [
                         Expanded(
                           child: Divider(
                             thickness: 1,
-                            endIndent: 10,
+                            endIndent: media.width * 0.025,
                             color: ElementColors.primary,
                           ),
                         ),
                         Text(
                           "or",
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: scaled(0.04), // scaled font
                             color: ElementColors.primary,
                           ),
                         ),
                         Expanded(
                           child: Divider(
                             thickness: 1,
-                            indent: 10,
+                            indent: media.width * 0.025,
                             color: ElementColors.primary,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: media.height * 0.025),
 
-                    // sign up button
                     Buttons(
                       title: "Log In",
                       customFontColor: ElementColors.secondary,
                       type: BtnType.lightSecondary,
+                      fontSize: scaled(0.045), // scaled font
                       onClick: () {
-                        Navigator.push(context, CustomPageRoute(page: Login()));
+                        Navigator.push(
+                          context,
+                          CustomPageRoute(page: Login()),
+                        );
                       },
                     ),
                   ],

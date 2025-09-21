@@ -3,204 +3,226 @@ import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/hamburger.dart';
 
+import 'package:elingkod/pages/barangay_clearance.dart';
+import 'package:elingkod/pages/barangay_id.dart';
+import 'package:elingkod/pages/business_clearance.dart';
+import 'package:elingkod/pages/request_status.dart';
+import 'package:elingkod/pages/profile.dart';
+
 class Home extends StatelessWidget {
   const Home({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ElementColors.fontColor2, // body background
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
 
+    // Responsive helpers
+    double responsiveFont(double base) => base * (screenWidth / 390);
+    double responsiveHeight(double base) => base * (screenHeight / 844);
+
+    return Scaffold(
+      backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
-        backgroundColor: ElementColors.primary, // top blue bar
+        backgroundColor: ElementColors.primary,
         iconTheme: IconThemeData(color: ElementColors.fontColor2),
         elevation: 0,
       ),
-
-      // 👇 attach your Hamburger widget here
       drawer: const Hamburger(),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Search box
+              // ✅ Search box
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F1F1), // search box color
+                  color: const Color(0xFFF1F1F1),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: "Can't find what you're looking for?",
-                    border: InputBorder.none,
-                    prefixIcon: Icon(Icons.search),
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: "Can't find what you're looking for?",
+                          hintStyle: TextStyle(
+                            overflow: TextOverflow.visible,
+                          ),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          border: InputBorder.none,
+                        ),
+                        style: const TextStyle(
+                          overflow: TextOverflow.visible,
+                        ),
+                        maxLines: 1,
+                        textAlignVertical: TextAlignVertical.center,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: responsiveHeight(20)),
 
-              // Logo + "Select a Service"
+              // Logo + Title
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
                     "assets/images/logo.png",
-                    height: 50,
+                    height: responsiveHeight(50),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: responsiveHeight(8)),
                   Text(
                     "Select a Service",
                     style: TextStyle(
                       color: ElementColors.secondary,
-                      fontSize: 18,
+                      fontSize: responsiveFont(18),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: responsiveHeight(20)),
 
-              // Barangay Clearance
-              Container(
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ElementColors.tertiary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(80),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: ElementColors.tertiary, width: 1),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      CustomPageRoute(page: const Home()), // example nav
-                    );
-                  },
-                  child: const Text(
-                    "Barangay Clearance",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
+              // Service Buttons
+              _buildServiceButton(
+                context,
+                label: "Barangay Clearance",
+                color: ElementColors.tertiary,
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    CustomPageRoute(page: const BarangayClearance()),
+                  );
+                },
+                fontSize: responsiveFont(18),
+                height: responsiveHeight(120),
               ),
-
-              // Barangay ID
-              Container(
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ElementColors.secondary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(80),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: ElementColors.secondary, width: 1),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      CustomPageRoute(page: const Home()), // change to BarangayID()
-                    );
-                  },
-                  child: const Text(
-                    "Barangay ID",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
+              _buildServiceButton(
+                context,
+                label: "Barangay ID",
+                color: ElementColors.secondary,
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    CustomPageRoute(page: const BarangayID()),
+                  );
+                },
+                fontSize: responsiveFont(18),
+                height: responsiveHeight(120),
               ),
-
-              // Business Clearance
-              Container(
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ElementColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(80),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: ElementColors.primary, width: 1),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      CustomPageRoute(page: const Home()), // change to BusinessClearance()
-                    );
-                  },
-                  child: const Text(
-                    "Business Clearance",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
+              _buildServiceButton(
+                context,
+                label: "Business Clearance",
+                color: ElementColors.primary,
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    CustomPageRoute(page: const BusinessClearance()),
+                  );
+                },
+                fontSize: responsiveFont(18),
+                height: responsiveHeight(120),
               ),
-
-              // Submitted Requests
-              Container(
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size.fromHeight(80),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: Colors.black, width: 1),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      CustomPageRoute(page: const Home()), // change to SubmittedRequests()
-                    );
-                  },
-                  child: const Text(
-                    "Submitted Requests",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
+              _buildServiceButton(
+                context,
+                label: "Submitted Requests",
+                color: Colors.white,
+                textColor: Colors.black,
+                borderColor: Colors.black,
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    CustomPageRoute(page: const RequestStatusPage()),
+                  );
+                },
+                fontSize: responsiveFont(18),
+                height: responsiveHeight(120),
               ),
             ],
           ),
         ),
       ),
 
-      // Bottom Profile Button
-      bottomNavigationBar: Container(
-        color: ElementColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              CustomPageRoute(page: const Home()), // change to Profile()
-            );
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.person, color: Colors.white),
-              SizedBox(width: 8),
-              Text(
-                "Profile",
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ],
+      // ✅ Bottom Navigation (smaller height)
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        child: Container(
+          width: double.infinity,
+          color: ElementColors.primary,
+          padding: EdgeInsets.symmetric(vertical: responsiveHeight(20)),
+          child: TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: Size.fromHeight(responsiveHeight(40)),
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                CustomPageRoute(page: const ProfilePage()),
+              );
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person, color: Colors.white, size: responsiveFont(22)),
+                SizedBox(width: responsiveHeight(6)),
+                Text(
+                  "Profile",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: responsiveFont(18),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
 
+  // 🔹 Reusable service button
+  Widget _buildServiceButton(
+      BuildContext context, {
+        required String label,
+        required Color color,
+        Color textColor = Colors.white,
+        Color borderColor = Colors.transparent,
+        required double fontSize,
+        required double height,
+        required VoidCallback onTap, // Added onTap parameter
+      }) {
+    return Container(
+      height: height,
+      margin: const EdgeInsets.only(bottom: 16),
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: textColor,
+          minimumSize: Size.fromHeight(height * 0.7),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: borderColor, width: 1),
+          ),
+        ),
+        onPressed: onTap, // Used the new onTap parameter
+        child: Text(
+          label,
+          style: TextStyle(fontSize: fontSize),
+        ),
+      ),
     );
   }
 }

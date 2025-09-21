@@ -154,50 +154,50 @@ class TxtField extends StatelessWidget {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  final textField = TextField(
-    controller: controller,
-    obscureText: obscure,
-    readOnly: readOnly,
-    style: const TextStyle(fontSize: 13),
-    decoration: _getDecoration(),
-  );
-
-  if (type == TxtFieldType.services) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // 🔹 aligns label to left
-        children: [
-          if (label != null) ...[
-            Text(
-              label!,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: ElementColors.fontColor1,
-              ),
-            ),
-            const SizedBox(height: 6), // space between label & field
-          ],
-          Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: ElementColors.shadow,
-                  blurRadius: 3,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: textField,
-          ),
-        ],
-      ),
+  @override
+  Widget build(BuildContext context) {
+    final textField = TextField(
+      controller: controller,
+      obscureText: obscure,
+      readOnly: readOnly,
+      style: const TextStyle(fontSize: 13),
+      decoration: _getDecoration(),
     );
-  }
+
+    if (type == TxtFieldType.services) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // 🔹 aligns label to left
+          children: [
+            if (label != null) ...[
+              Text(
+                label!,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: ElementColors.fontColor1,
+                ),
+              ),
+              const SizedBox(height: 6), // space between label & field
+            ],
+            Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: ElementColors.shadow,
+                    blurRadius: 3,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: textField,
+            ),
+          ],
+        ),
+      );
+    }
 
     return textField;
   }
