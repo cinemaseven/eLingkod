@@ -1,7 +1,7 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/common_widget/textfields.dart';
+import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/pages/login.dart';
 import 'package:elingkod/pages/profile_info.dart';
 import 'package:flutter/material.dart';
@@ -70,12 +70,14 @@ class _SignupState extends State<Signup> {
                         type: TxtFieldType.regis,
                         controller: email,
                         hint: "Email",
+                        keyboardType: TextInputType.emailAddress,
                       )
                     else
                       TxtField(
                         type: TxtFieldType.regis,
                         controller: contactNumber,
                         hint: "Contact Number",
+                        keyboardType: TextInputType.number,
                       ),
                     SizedBox(height: media.height * 0.02),
                     TxtField(
@@ -83,6 +85,7 @@ class _SignupState extends State<Signup> {
                       controller: password,
                       hint: "Password",
                       obscure: true,
+                      keyboardType: TextInputType.visiblePassword,
                     ),
                     SizedBox(height: media.height * 0.02),
                     TxtField(
@@ -90,6 +93,7 @@ class _SignupState extends State<Signup> {
                       controller: rePassword,
                       hint: "Re-enter password",
                       obscure: true,
+                      keyboardType: TextInputType.visiblePassword,
                     ),
                     SizedBox(height: media.height * 0.05),
                     SizedBox(

@@ -1,7 +1,8 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/common_widget/textfields.dart';
+import 'package:elingkod/common_widget/form_fields.dart';
+import 'package:elingkod/pages/forgot_password.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/pages/signup.dart';
 import 'package:flutter/material.dart';
@@ -65,19 +66,41 @@ class _LoginState extends State<Login> {
                         color: ElementColors.fontColor2,
                       ),
                     ),
+                    
                     SizedBox(height: media.height * 0.04),
                     TxtField(
                       type: TxtFieldType.regis,
                       controller: useEmail ? email : contactNumber,
                       hint: useEmail ? "Email" : "Contact Number",
+                      keyboardType: useEmail ? TextInputType.emailAddress : TextInputType.number,
                     ),
+                    
                     SizedBox(height: media.height * 0.02),
                     TxtField(
                       type: TxtFieldType.regis,
                       controller: password,
                       hint: "Password",
                       obscure: true,
+                      keyboardType: TextInputType.visiblePassword,
                     ),
+
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, CustomPageRoute(page: ForgotPassword()));
+                        },
+                        child: Text(
+                            "Forgot Password?",
+                            style: TextStyle(
+                              color: ElementColors.fontColor2,
+                              fontSize: 12
+                            ),
+                          ),
+                        ),
+                    ),
+
                     SizedBox(height: media.height * 0.05),
                     SizedBox(
                       width: double.infinity,

@@ -1,9 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
-import 'package:elingkod/common_widget/textfields.dart';
-import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
+import 'package:elingkod/common_widget/form_fields.dart';
+import 'package:elingkod/common_widget/img_file_upload.dart';
+import 'package:elingkod/pages/home.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class BarangayClearance extends StatefulWidget {
   const BarangayClearance({super.key});
@@ -13,29 +17,54 @@ class BarangayClearance extends StatefulWidget {
 }
 
 class _BarangayClearanceState extends State<BarangayClearance> {
-  final TextEditingController lengthStayController = TextEditingController();
-  final TextEditingController clearanceNumController = TextEditingController();
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController houseNoController = TextEditingController();
-  final TextEditingController streetController = TextEditingController();
-  final TextEditingController cityController = TextEditingController();
-  final TextEditingController provinceController = TextEditingController();
-  final TextEditingController zipController = TextEditingController();
-  final TextEditingController dobController = TextEditingController();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController contactController = TextEditingController();
-  final TextEditingController pobController = TextEditingController();
-  final TextEditingController nationalityController = TextEditingController();
-  final TextEditingController civilStatusController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController purposeController = TextEditingController();
+  final TextEditingController appMonth = TextEditingController();
+  final TextEditingController appDay = TextEditingController();
+  final TextEditingController appYear = TextEditingController();
 
-  String ownOrRent = "";
-  String gender = "";
+  final TextEditingController lengthStay = TextEditingController();
+  final TextEditingController clearanceNum = TextEditingController();
+  final TextEditingController fullName = TextEditingController();
+
+  final TextEditingController houseNum = TextEditingController();
+  final TextEditingController street = TextEditingController();
+  final TextEditingController city = TextEditingController();
+  final TextEditingController province = TextEditingController();
+  final TextEditingController zipCode = TextEditingController();
+
+  final TextEditingController birthMonth = TextEditingController();
+  final TextEditingController birthDay = TextEditingController();
+  final TextEditingController birthYear = TextEditingController();
+
+  final TextEditingController age = TextEditingController();
+  final TextEditingController contactNum = TextEditingController();
+  final TextEditingController birthplace = TextEditingController();
+  final TextEditingController nationality = TextEditingController();
+  final TextEditingController civilStatus = TextEditingController();
+  final TextEditingController email = TextEditingController();
+  final TextEditingController purpose = TextEditingController();
+
+  String? ownOrRent;
+  String? gender;
 
   final double menuIconSize = 28;
   final TextStyle labelStyle =
-  const TextStyle(fontSize: 16, fontWeight: FontWeight.w500);
+  const TextStyle(fontSize: 16, fontWeight: FontWeight.w400);
+
+  File? signatureImage;
+
+  final ImagePicker _picker = ImagePicker();
+
+  // Pick an image (for Signature)
+  Future<void> _pickImage(Function(File) onSelected) async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        onSelected(File(pickedFile.path));
+      });
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -50,368 +79,461 @@ class _BarangayClearanceState extends State<BarangayClearance> {
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header with back and button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black),
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        CustomPageRoute(page: const Home()),
-                      );
-                    },
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ElementColors.tertiary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Barangay Clearance button tapped!"),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      Future.delayed(const Duration(seconds: 2), () {
-                        Navigator.pop(context);
-                      });
-                    },
-                    icon: Icon(Icons.article,
-                        size: menuIconSize, color: Colors.white),
-                    label: Text("Barangay Clearance", style: labelStyle),
-                  ),
-                ],
-              ),
-            ),
-
-            // Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              child: Row(
-                children: [
-                  const Expanded(child: Divider(thickness: 1)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text("Form to be Accomplished", style: labelStyle),
-                  ),
-                  const Expanded(child: Divider(thickness: 1)),
-                ],
-              ),
-            ),
-
-            // Full-width fields
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Application Date
-                  Text("Application Date", style: labelStyle),
-                  const SizedBox(height: 6),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (isSmallScreen) {
-                        return Column(
-                          children: [
-                            TxtField(
-                              type: TxtFieldType.services,
-                              hint: "MM",
-                            ),
-                            const SizedBox(height: 10),
-                            TxtField(
-                              type: TxtFieldType.services,
-                              hint: "DD",
-                            ),
-                            const SizedBox(height: 10),
-                            TxtField(
-                              type: TxtFieldType.services,
-                              hint: "YYYY",
-                            ),
-                          ],
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 50),
+          child: Column(
+            children: [
+              // Header with back and button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          CustomPageRoute(page: const Home()),
                         );
-                      } else {
-                        return Row(
-                          children: [
-                            Expanded(
-                              flex: 8,
-                              child: TxtField(
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ElementColors.tertiary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Barangay Clearance button tapped!"),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        Future.delayed(const Duration(seconds: 2), () {
+                          Navigator.pop(context);
+                        });
+                      },
+                      icon: Icon(Icons.article,
+                          size: menuIconSize, color: Colors.white),
+                      label: Text("Barangay Clearance", style: labelStyle),
+                    ),
+                  ],
+                ),
+              ),
+          
+              // Divider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                child: Row(
+                  children: [
+                    const Expanded(child: Divider(thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text("Form to be Accomplished", style: labelStyle),
+                    ),
+                    const Expanded(child: Divider(thickness: 1)),
+                  ],
+                ),
+              ),
+          
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Application Date
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30),
+                      child: Text("Application Date:", style: labelStyle),
+                    ),
+                    const SizedBox(height: 6),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (isSmallScreen) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TxtField(
                                 type: TxtFieldType.services,
                                 hint: "MM",
+                                width: media.width * 0.27,
+                                customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              flex: 8,
-                              child: TxtField(
+                              const SizedBox(height: 10),
+                              TxtField(
                                 type: TxtFieldType.services,
                                 hint: "DD",
+                                width: media.width * 0.27,
+                                customPadding: EdgeInsets.fromLTRB(0, 5, 0, 0),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              flex: 10,
-                              child: TxtField(
+                              const SizedBox(height: 10),
+                              TxtField(
                                 type: TxtFieldType.services,
                                 hint: "YYYY",
+                                width: media.width * 0.27,
+                                customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
                               ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Own or Rent
-                  Text("Own or Rent", style: labelStyle),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Radio<String>(
-                          value: "Owner",
-                          groupValue: ownOrRent,
-                          onChanged: (val) => setState(() => ownOrRent = val!),
-                        ),
-                      ),
-                      Text("Owner", style: labelStyle),
-                      const SizedBox(width: 20),
-                      Flexible(
-                        child: Radio<String>(
-                          value: "Renter",
-                          groupValue: ownOrRent,
-                          onChanged: (val) => setState(() => ownOrRent = val!),
-                        ),
-                      ),
-                      Text("Renter", style: labelStyle),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Length of Stay
-                  TxtField(
+                            ],
+                          );
+                        } else {
+                          return Row(
+                            children: [
+                              Expanded(
+                                flex: 8,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "MM",
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 8,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "DD",
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 10,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "YYYY",
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+          
+                    // Own or Rent
+                    const SizedBox(height: 20),
+                    RadioButtons(
+                      label: 'Own or Rent', 
+                      options: ['Own', 'Rent'], 
+                      onChanged: (value) { setState(() { ownOrRent = value; });},
+                      inline: true,
+                    ),
+          
+                    // Length of Stay
+                    const SizedBox(height: 10),
+                    TxtField(
+                      label: "Length of Stay",
                       type: TxtFieldType.services,
                       hint: "Days",
-                      label: "Length of Stay",
-                      controller: lengthStayController),
-                  const SizedBox(height: 16),
-
-                  // Clearance Number
-                  TxtField(
+                      controller: lengthStay,
+                      keyboardType: TextInputType.number
+                    ),
+                    
+                    // Clearance Number
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Clearance Number",
                       type: TxtFieldType.services,
                       hint: "Enter Clearance Number",
-                      label: "Clearance Number",
-                      controller: clearanceNumController),
-                  const SizedBox(height: 16),
-
-                  // Full Name
-                  TxtField(
+                      controller: clearanceNum
+                    ),
+          
+                    // Full Name
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Full Name",
                       type: TxtFieldType.services,
                       hint: "Last, First, Middle",
-                      label: "Full Name",
-                      controller: fullNameController),
-                  const SizedBox(height: 16),
-
-                  // Gender
-                  Text("Gender", style: labelStyle),
-                  const SizedBox(height: 6),
+                      controller: fullName
+                    ),
+          
+                    // Gender
+                    const SizedBox(height: 20),
+                    RadioButtons(
+                      label: 'Gender', 
+                      options: ['Male', 'Female'], 
+                      onChanged: (value) { setState(() { gender = value; });},
+                      inline: true,
+                    ),
+          
+                   // Address
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('Complete Residential Address', 
+                          style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          color: ElementColors.fontColor1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Flexible(
-                        child: Radio<String>(
-                          value: "Male",
-                          groupValue: gender,
-                          onChanged: (val) => setState(() => gender = val!),
-                        ),
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'House Number:',
+                        hint: "Ex: 387",
+                        controller: houseNum,
+                        width: media.width * 0.3,
+                        labelFontSize: 15,
+                        customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
                       ),
-                      Text("Male", style: labelStyle),
-                      const SizedBox(width: 20),
-                      Flexible(
-                        child: Radio<String>(
-                          value: "Female",
-                          groupValue: gender,
-                          onChanged: (val) => setState(() => gender = val!),
-                        ),
+              
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'Street:',
+                        hint: "Ex: San Juan",
+                        controller: street,
+                        width: media.width * 0.5,
+                        labelFontSize: 15,
+                        customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
                       ),
-                      Text("Female", style: labelStyle),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Address
+              
+                  const SizedBox(height: 10),
                   TxtField(
-                      type: TxtFieldType.services,
-                      hint: "House Number",
-                      label: "House Number",
-                      controller: houseNoController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Street",
-                      label: "Street",
-                      controller: streetController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "City",
-                      label: "City",
-                      controller: cityController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Province",
-                      label: "Province",
-                      controller: provinceController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Zip Code",
-                      label: "Zip Code",
-                      controller: zipController),
-                  const SizedBox(height: 16),
-
-                  // Date of Birth + Age
-                  Text("Date of Birth & Age", style: labelStyle),
-                  const SizedBox(height: 6),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (isSmallScreen) {
-                        return Column(
-                          children: [
-                            TxtField(
-                                type: TxtFieldType.services,
-                                hint: "MM/DD/YYYY",
-                                controller: dobController),
-                            const SizedBox(height: 12),
-                            TxtField(
-                                type: TxtFieldType.services,
-                                hint: "00",
-                                controller: ageController),
-                          ],
-                        );
-                      } else {
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: TxtField(
-                                  type: TxtFieldType.services,
-                                  hint: "MM/DD/YYYY",
-                                  controller: dobController),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TxtField(
-                                  type: TxtFieldType.services,
-                                  hint: "00",
-                                  controller: ageController),
-                            ),
-                          ],
-                        );
-                      }
-                    },
+                    type: TxtFieldType.services,
+                    label: 'City:',
+                    hint: "Ex: ",
+                    controller: city,
+                    labelFontSize: 15,
+                    customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
                   ),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "09XXXXXXXXX",
-                      label: "Contact Number",
-                      controller: contactController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Place of Birth",
-                      label: "Place of Birth",
-                      controller: pobController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Nationality",
-                      label: "Nationality",
-                      controller: nationalityController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Civil Status",
-                      label: "Civil Status",
-                      controller: civilStatusController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "example@gmail.com",
-                      label: "Email Address",
-                      controller: emailController),
-                  const SizedBox(height: 16),
-
-                  TxtField(
-                      type: TxtFieldType.services,
-                      hint: "Enter Purpose",
-                      label: "Clearance Purpose",
-                      controller: purposeController),
+                  
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'Province:',
+                        hint: "Ex: Pampanga",
+                        controller: province,
+                        width: media.width * 0.5,
+                        labelFontSize: 15,
+                        customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                      ),
+              
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'Zip Code:',
+                        hint: "Ex: 2007",
+                        controller: zipCode,
+                        width: media.width * 0.29,
+                        labelFontSize: 15,
+                        customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                      ),
+                    ],
+                  ),
+          
                   const SizedBox(height: 20),
-
-                  // Upload Section
-                  Container(
-                    height: media.width < 400 ? 100 : 120, // Responsive height
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(15),
+                  Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date of Birth
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30),
+                      child: Text("Date of Birth:", style: labelStyle),
                     ),
-                    child: Center(
-                        child: Text("Upload Files", style: labelStyle)),
-                  ),
-
-                  // Submit button
-                  const SizedBox(height: 20),
-                  Center(
-                    child: SizedBox(
-                      width: isSmallScreen ? media.width * 0.8 : media.width * 0.5,
-                      child: Buttons(
-                        title: "Submit",
-                        type: BtnType.secondary,
-                        onClick: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Form Submitted!"),
-                              duration: Duration(seconds: 2),
-                            ),
+                    const SizedBox(height: 6),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (isSmallScreen) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TxtField(
+                                type: TxtFieldType.services,
+                                hint: "MM",
+                                width: media.width * 0.27,
+                                controller: birthMonth,
+                                customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
+                              ),
+                              const SizedBox(height: 10),
+                              TxtField(
+                                type: TxtFieldType.services,
+                                hint: "DD",
+                                width: media.width * 0.27,
+                                controller: birthDay,
+                                customPadding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                              ),
+                              const SizedBox(height: 10),
+                              TxtField(
+                                type: TxtFieldType.services,
+                                hint: "YYYY",
+                                width: media.width * 0.27,
+                                controller: birthYear,
+                                customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
+                              ),
+                            ],
                           );
-                          Future.delayed(const Duration(seconds: 2), () {
-                            Navigator.pop(context);
-                          });
-                        },
+                        } else {
+                          return Row(
+                            children: [
+                              Expanded(
+                                flex: 8,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "MM",
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 8,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "DD",
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 10,
+                                child: TxtField(
+                                  type: TxtFieldType.services,
+                                  hint: "YYYY",
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+          
+                  // Age
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'Age:',
+                        hint: "Ex: 17",
+                        controller: age,
+                        width: media.width * 0.3,
+                        customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
+                      ),
+              
+                      // Contact Number
+                      TxtField(
+                        type: TxtFieldType.services,
+                        label: 'Contact Number:',
+                        hint: "Ex: 09xx xxx xxxx",
+                        controller: contactNum,
+                        keyboardType: TextInputType.number,
+                        width: media.width * 0.5,
+                        customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                      ),
+                    ],
+                  ),
+          
+                    // Place of Birth
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Place of Birth",
+                        type: TxtFieldType.services,
+                        hint: "Place of Birth",
+                        controller: birthplace
+                      ),
+                    
+                    // Nationality
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Nationality",
+                        type: TxtFieldType.services,
+                        hint: "Nationality",
+                        controller: nationality
+                      ),
+                    
+                    // Civil Status
+                    const SizedBox(height: 16),
+                    TxtField(
+                      label: "Civil Status",
+                        type: TxtFieldType.services,
+                        hint: "Civil Status",
+                        controller: civilStatus
+                      ),
+                    
+                    // Email
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Email Address",
+                        type: TxtFieldType.services,
+                        hint: "example@gmail.com",
+                        controller: email,
+                        keyboardType: TextInputType.emailAddress
+                      ),
+          
+                    // Clearance Purpose
+                    const SizedBox(height: 20),
+                    TxtField(
+                      label: "Clearance Purpose",
+                        type: TxtFieldType.services,
+                        hint: "Enter Purpose",
+                        controller: purpose
+                      ),
+          
+                    // Signature (Image)
+                    const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
+                      child: UploadImageBox(
+                        label: "Applicant Signature over Printed Name",
+                        imageFile: signatureImage,
+                        onTap: () => _pickImage((file) => signatureImage = file),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
-          ],
-        ),
+          
+                    // const SizedBox(height: 20),
+                    // Container(
+                    //   height: media.width < 400 ? 100 : 120, // Responsive height
+                    //   width: double.infinity,
+                    //   decoration: BoxDecoration(
+                    //     border: Border.all(color: Colors.grey.shade400),
+                    //     borderRadius: BorderRadius.circular(15),
+                    //   ),
+                    //   child: Center(
+                    //       child: Text("Upload Files", style: labelStyle)),
+                    // ),
+          
+                    // Submit button
+                    const SizedBox(height: 30),
+                    Center(
+                      child: SizedBox(
+                        width: isSmallScreen ? media.width * 0.5 : media.width * 0.3,
+                        child: Buttons(
+                          title: "Submit",
+                          type: BtnType.secondary,
+                          fontSize: isSmallScreen ? 16 : 14 ,
+                          height: 45,
+                          onClick: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Form Submitted!"),
+                                duration: Duration(seconds: 2),
+                                backgroundColor: ElementColors.primary,
+                              ),
+                            );
+                            Future.delayed(const Duration(seconds: 2), () {
+                              Navigator.pop(context);
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    // const SizedBox(height: 30),
+                  ],
+                ),
+            ],
+          ),],),
+        )
       ),
     );
   }
