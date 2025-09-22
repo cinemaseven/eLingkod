@@ -50,6 +50,7 @@ class TxtField extends StatelessWidget {
             vertical: .5,
             horizontal: 15,
           ),
+          suffixIcon: suffixIcon,
         );
 
       case TxtFieldType.services:
@@ -82,7 +83,7 @@ class TxtField extends StatelessWidget {
             vertical: 10,
             horizontal: 12,
           ),
-          suffixIcon: suffixIcon,
+          // suffixIcon: suffixIcon,
         );
     }
   }
@@ -94,6 +95,7 @@ class TxtField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscure,
       readOnly: readOnly,
+      onTap: onTap,
       style: const TextStyle(fontSize: 13),
       decoration: _getDecoration(),
     );

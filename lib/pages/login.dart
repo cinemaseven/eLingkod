@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
@@ -18,6 +19,7 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   bool useEmail = true;
+  bool _obscurePassword = true;
 
   final TextEditingController email = TextEditingController();
   final TextEditingController contactNumber = TextEditingController();
@@ -117,8 +119,19 @@ class _LoginState extends State<Login> {
                       type: TxtFieldType.regis,
                       controller: password,
                       hint: "Password",
-                      obscure: true,
+                      obscure: _obscurePassword,
                       keyboardType: TextInputType.visiblePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: ElementColors.primary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Align(
@@ -184,7 +197,12 @@ class _LoginState extends State<Login> {
                         fontSize: media.width * 0.04,
                         height: media.height * 0.065,
                         onClick: () {
-                          setState(() => useEmail = !useEmail);
+                          setState(() {
+                            useEmail = !useEmail;
+                            email.clear();
+                            contactNumber.clear();
+                            password.clear();
+                          });
                         },
                       ),
                     ),

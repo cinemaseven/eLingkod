@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
@@ -17,6 +18,8 @@ class Signup extends StatefulWidget {
 
 class _SignupState extends State<Signup> {
   bool useEmail = true;
+  bool _obscurePassword = true;
+  bool _obscureRePassword = true;
 
   TextEditingController email = TextEditingController();
   TextEditingController contactNumber = TextEditingController();
@@ -236,8 +239,19 @@ class _SignupState extends State<Signup> {
                       type: TxtFieldType.regis,
                       controller: password,
                       hint: "Password",
-                      obscure: true,
+                      obscure: _obscurePassword,
                       keyboardType: TextInputType.visiblePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          color: ElementColors.primary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
                     // Password Validation Checklist
                     Padding(
@@ -281,8 +295,19 @@ class _SignupState extends State<Signup> {
                       type: TxtFieldType.regis,
                       controller: rePassword,
                       hint: "Re-enter password",
-                      obscure: true,
+                      obscure: _obscureRePassword,
                       keyboardType: TextInputType.visiblePassword,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureRePassword ? Icons.visibility_off : Icons.visibility,
+                          color: ElementColors.primary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureRePassword = !_obscureRePassword;
+                          });
+                        },
+                      ),
                     ),
                     SizedBox(height: media.height * 0.05),
                     SizedBox(
@@ -331,6 +356,10 @@ class _SignupState extends State<Signup> {
                         onClick: () {
                           setState(() {
                             useEmail = !useEmail;
+                            email.clear();
+                            contactNumber.clear();
+                            password.clear();
+                            rePassword.clear();
                           });
                         },
                       ),
