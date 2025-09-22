@@ -13,16 +13,18 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('uploads'));
 
+// Database connection pool
 const pool = mysql.createPool({
     host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'elingkod',
+    user: 'root',          // change if needed
+    password: '',          // change if needed
+    database: 'elingkod',  // your DB
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
+// Multer storage (for images)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -33,6 +35,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+/* ===========================
+   SIGNUP ROUTE
+=========================== */
 app.post('/signup', async (req, res) => {
     const { emailOrContact, password } = req.body;
     if (!emailOrContact || !password) {
@@ -44,6 +49,7 @@ app.post('/signup', async (req, res) => {
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
+        // Check if user exists already
         const [rows] = await connection.execute(
             'SELECT * FROM User_Details WHERE email = ? OR contact_num = ?',
             [emailOrContact, emailOrContact]
@@ -56,13 +62,18 @@ app.post('/signup', async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Corrected INSERT query to handle the username column
+
+        // Insert new user
         await connection.execute(
-            'INSERT INTO User_Details (username, email, password) VALUES (?, ?, ?)',
-            [emailOrContact, emailOrContact.includes('@') ? emailOrContact : null, hashedPassword]
+            'INSERT INTO User_Details (username, email, contact_num, password) VALUES (?, ?, ?, ?)',
+            [
+                emailOrContact,                                 // use as username
+                emailOrContact.includes('@') ? emailOrContact : null, // email if provided
+                !emailOrContact.includes('@') ? emailOrContact : null, // contact_num if provided
+                hashedPassword
+            ]
         );
-        
+
         await connection.commit();
         connection.release();
         res.status(201).send({ message: 'User registered successfully' });
@@ -76,6 +87,9 @@ app.post('/signup', async (req, res) => {
     }
 });
 
+/* ===========================
+   LOGIN ROUTE
+=========================== */
 app.post('/login', async (req, res) => {
     const { emailOrContact, password } = req.body;
     if (!emailOrContact || !password) {
@@ -99,13 +113,24 @@ app.post('/login', async (req, res) => {
             return res.status(401).send({ message: 'Invalid credentials' });
         }
 
-        res.status(200).send({ message: 'Login successful', user });
+        res.status(200).send({
+            message: 'Login successful',
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                contact_num: user.contact_num
+            }
+        });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).send({ message: 'Server error' });
     }
 });
 
+/* ===========================
+   COMPLETE PROFILE ROUTE
+=========================== */
 app.post('/complete-profile', upload.fields([{ name: 'frontImage' }, { name: 'backImage' }]), async (req, res) => {
     const {
         email,
@@ -130,7 +155,7 @@ app.post('/complete-profile', upload.fields([{ name: 'frontImage' }, { name: 'ba
 
     const frontImagePath = req.files && req.files['frontImage'] ? req.files['frontImage'][0].path : null;
     const backImagePath = req.files && req.files['backImage'] ? req.files['backImage'][0].path : null;
-    
+
     if (!email && !contactNumber) {
         return res.status(400).send({ message: 'User identifier (email or contact number) is required.' });
     }
@@ -159,24 +184,24 @@ app.post('/complete-profile', upload.fields([{ name: 'frontImage' }, { name: 'ba
             back_id_image = ?
             WHERE email = ? OR contact_num = ?
         `;
-        
+
         const values = [
-            lastName, 
-            firstName, 
-            midName, 
-            gender, 
-            birthDate, 
-            birthPlace, 
+            lastName,
+            firstName,
+            midName,
+            gender,
+            birthDate,
+            birthPlace,
             citizenship,
-            houseNum, 
-            street, 
-            city, 
-            province, 
-            zipCode, 
-            contactNumber, 
-            civilStatus, 
-            voterStatus, 
-            isPwd, 
+            houseNum,
+            street,
+            city,
+            province,
+            zipCode,
+            contactNumber,
+            civilStatus,
+            voterStatus,
+            isPwd,
             pwdIdNum,
             frontImagePath,
             backImagePath,
@@ -185,7 +210,7 @@ app.post('/complete-profile', upload.fields([{ name: 'frontImage' }, { name: 'ba
         ];
 
         const [result] = await pool.execute(query, values);
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).send({ message: 'User not found.' });
         }
