@@ -5,7 +5,9 @@ import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
+import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/pages/home.dart';
+import 'package:elingkod/pages/confirmation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -509,23 +511,27 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                       child: SizedBox(
                         width: isSmallScreen ? media.width * 0.5 : media.width * 0.3,
                         child: Buttons(
-                          title: "Submit",
-                          type: BtnType.secondary,
-                          fontSize: isSmallScreen ? 16 : 14 ,
-                          height: 45,
-                          onClick: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Form Submitted!"),
-                                duration: Duration(seconds: 2),
-                                backgroundColor: ElementColors.primary,
-                              ),
-                            );
-                            Future.delayed(const Duration(seconds: 2), () {
-                              Navigator.pop(context);
-                            });
-                          },
-                        ),
+                        title: "Submit",
+                        type: BtnType.secondary,
+                        fontSize: isSmallScreen ? 16 : 14,
+                        height: 45,
+                        onClick: () {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (dialogContext) => TermsPopup(
+                              onConfirmed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    CustomPageRoute(page: const ConfirmationPage()),
+                                  );
+                              },
+                            ),
+                          );
+                        },
+
+                      ),
+
                       ),
                     ),
                     // const SizedBox(height: 30),

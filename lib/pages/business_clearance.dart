@@ -5,6 +5,8 @@ import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
+import 'package:elingkod/common_widget/applicant_undertaking.dart';
+import 'package:elingkod/pages/confirmation.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -582,17 +584,19 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           fontSize: isSmallScreen ? 16 : 14 ,
                           height: 45,
                           onClick: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text("Form Submitted!"),
-                                duration: const Duration(seconds: 2),
-                                backgroundColor: ElementColors.primary,
-                              ),
-                            );
-                            Future.delayed(const Duration(seconds: 2), () {
-                              Navigator.pop(context);
-                            });
-                          },
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (dialogContext) => BusinessClearancePopup(
+                              onConfirmed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    CustomPageRoute(page: const ConfirmationPage()),
+                                  );
+                              },
+                            ),
+                          );
+                        },
                         ),
                       ),
                     ),
