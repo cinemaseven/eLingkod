@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
@@ -5,6 +6,7 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/pages/login.dart';
 import 'package:elingkod/pages/profile_info.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -20,6 +22,154 @@ class _SignupState extends State<Signup> {
   TextEditingController contactNumber = TextEditingController();
   TextEditingController password = TextEditingController();
   TextEditingController rePassword = TextEditingController();
+
+  // New state variables for password validation
+  Map<String, bool> _validationStatus = {
+    'isLengthValid': false,
+    'hasUppercase': false,
+    'hasLowercase': false,
+    'hasNumber': false,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    password.addListener(_checkPasswordValidation);
+  }
+
+  @override
+  void dispose() {
+    password.removeListener(_checkPasswordValidation);
+    password.dispose();
+    email.dispose();
+    contactNumber.dispose();
+    rePassword.dispose();
+    super.dispose();
+  }
+
+  void _checkPasswordValidation() {
+    setState(() {
+      _validationStatus['isLengthValid'] = password.text.length >= 8;
+      _validationStatus['hasUppercase'] = password.text.contains(
+        RegExp(r'[A-Z]'),
+      );
+      _validationStatus['hasLowercase'] = password.text.contains(
+        RegExp(r'[a-z]'),
+      );
+      _validationStatus['hasNumber'] = password.text.contains(RegExp(r'[0-9]'));
+    });
+  }
+
+  double get _passwordStrength {
+    int score = 0;
+    if (_validationStatus['isLengthValid']!) score++;
+    if (_validationStatus['hasUppercase']!) score++;
+    if (_validationStatus['hasLowercase']!) score++;
+    if (_validationStatus['hasNumber']!) score++;
+    return score / 4.0;
+  }
+
+  Future<void> _signup() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Front-end email and contact number validation
+    if (useEmail &&
+        !RegExp(
+          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+        ).hasMatch(email.text)) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Please enter a valid email address.'),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (!useEmail && contactNumber.text.length != 11) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Contact number must be exactly 11 digits.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (!_validationStatus.values.every((element) => element)) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Please meet all password requirements.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (password.text != rePassword.text) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Passwords do not match.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final url = Uri.parse('http://localhost:3000/signup');
+    final body = {
+      'emailOrContact': useEmail ? email.text : contactNumber.text,
+      'password': password.text,
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      final resBody = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Sign up successful!'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.push(
+          context,
+          CustomPageRoute(
+            page: ProfileInfo(
+              emailOrContact: useEmail ? email.text : contactNumber.text,
+            ),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(resBody['message'] ?? 'Sign up failed'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +203,9 @@ class _SignupState extends State<Signup> {
                 ),
               ),
               padding: EdgeInsets.symmetric(
-                  horizontal: media.width * 0.1, vertical: media.height * 0.03),
+                horizontal: media.width * 0.1,
+                vertical: media.height * 0.03,
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -87,6 +239,43 @@ class _SignupState extends State<Signup> {
                       obscure: true,
                       keyboardType: TextInputType.visiblePassword,
                     ),
+                    // Password Validation Checklist
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildValidationRow(
+                            '8 or more characters',
+                            _validationStatus['isLengthValid']!,
+                          ),
+                          _buildValidationRow(
+                            'Uppercase & lowercase letters',
+                            _validationStatus['hasUppercase']! &&
+                                _validationStatus['hasLowercase']!,
+                          ),
+                          _buildValidationRow(
+                            'At least one number',
+                            _validationStatus['hasNumber']!,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Password Strength:',
+                            style: TextStyle(color: ElementColors.fontColor2),
+                          ),
+                          SizedBox(height: 5),
+                          LinearProgressIndicator(
+                            value: _passwordStrength,
+                            backgroundColor: ElementColors.primary,
+                            color: _passwordStrength > 0.75
+                                ? Colors.green
+                                : _passwordStrength > 0.5
+                                ? Colors.yellow
+                                : ElementColors.tertiary,
+                          ),
+                        ],
+                      ),
+                    ),
                     SizedBox(height: media.height * 0.02),
                     TxtField(
                       type: TxtFieldType.regis,
@@ -103,12 +292,7 @@ class _SignupState extends State<Signup> {
                         type: BtnType.secondary,
                         fontSize: media.width * 0.04,
                         height: media.height * 0.065,
-                        onClick: () {
-                          Navigator.push(
-                            context,
-                            CustomPageRoute(page: ProfileInfo()),
-                          );
-                        },
+                        onClick: _signup,
                       ),
                     ),
                     SizedBox(height: media.height * 0.02),
@@ -154,10 +338,7 @@ class _SignupState extends State<Signup> {
                     SizedBox(height: media.height * 0.03),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          CustomPageRoute(page: Login()),
-                        );
+                        Navigator.push(context, CustomPageRoute(page: Login()));
                       },
                       child: RichText(
                         text: TextSpan(
@@ -187,6 +368,25 @@ class _SignupState extends State<Signup> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildValidationRow(String text, bool isValid) {
+    return Row(
+      children: [
+        Icon(
+          isValid ? Icons.check_circle : Icons.circle_outlined,
+          color: isValid ? Colors.green : Colors.white,
+          size: 16,
+        ),
+        SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: isValid ? Colors.green : ElementColors.fontColor2,
+          ),
+        ),
+      ],
     );
   }
 }

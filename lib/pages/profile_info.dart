@@ -6,30 +6,82 @@ import 'package:elingkod/pages/pwd_info.dart';
 import 'package:elingkod/pages/signup.dart';
 import 'package:flutter/material.dart';
 
-
 class ProfileInfo extends StatefulWidget {
-  const ProfileInfo({super.key});
+  final String emailOrContact;
+  const ProfileInfo({super.key, required this.emailOrContact});
 
   @override
   State<ProfileInfo> createState() => _ProfileInfoState();
 }
 
 class _ProfileInfoState extends State<ProfileInfo> {
-  // bool useEmail = true;
   String? gender;
-  TextEditingController email = TextEditingController();
-  TextEditingController lastName = TextEditingController();
-  TextEditingController firstName = TextEditingController();
-  TextEditingController midName = TextEditingController();
-  TextEditingController birthPlace = TextEditingController();
-  TextEditingController houseNum = TextEditingController();
-  TextEditingController street = TextEditingController();
-  TextEditingController city = TextEditingController();
-  TextEditingController province = TextEditingController();
-  TextEditingController zipCode = TextEditingController();
-  TextEditingController contactNumber = TextEditingController();
-  TextEditingController civilStatus = TextEditingController();
-  TextEditingController voterStatus = TextEditingController();
+
+  // Initialize the TextEditingControllers
+  final TextEditingController email = TextEditingController();
+  final TextEditingController lastName = TextEditingController();
+  final TextEditingController firstName = TextEditingController();
+  final TextEditingController midName = TextEditingController();
+  final TextEditingController birthDate = TextEditingController();
+  final TextEditingController birthPlace = TextEditingController();
+  final TextEditingController houseNum = TextEditingController();
+  final TextEditingController street = TextEditingController();
+  final TextEditingController city = TextEditingController();
+  final TextEditingController province = TextEditingController();
+  final TextEditingController zipCode = TextEditingController();
+  final TextEditingController contactNumber = TextEditingController();
+  final TextEditingController civilStatus = TextEditingController();
+  final TextEditingController voterStatus = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Set the email controller's initial text from the value passed to the widget.
+    email.text = widget.emailOrContact;
+  }
+
+  void _navigateToPwdInfo() {
+    final profileData = {
+      'emailOrContact': email.text,
+      'lastName': lastName.text,
+      'firstName': firstName.text,
+      'midName': midName.text,
+      'gender': gender,
+      'birthDate': birthDate.text,
+      'birthPlace': birthPlace.text,
+      'houseNum': houseNum.text,
+      'street': street.text,
+      'city': city.text,
+      'province': province.text,
+      'zipCode': zipCode.text,
+      'contactNumber': contactNumber.text,
+      'civilStatus': civilStatus.text,
+      'voterStatus': voterStatus.text,
+    };
+    Navigator.push(
+      context,
+      CustomPageRoute(page: PwdInfo(profileData: profileData)),
+    );
+  }
+
+  @override
+  void dispose() {
+    email.dispose();
+    lastName.dispose();
+    firstName.dispose();
+    midName.dispose();
+    birthDate.dispose();
+    birthPlace.dispose();
+    houseNum.dispose();
+    street.dispose();
+    city.dispose();
+    province.dispose();
+    zipCode.dispose();
+    contactNumber.dispose();
+    civilStatus.dispose();
+    voterStatus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,28 +99,31 @@ class _ProfileInfoState extends State<ProfileInfo> {
           padding: const EdgeInsets.only(bottom: 50),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children:  [
+            children: [
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [ 
+                children: [
                   IconButton(
-                    onPressed: () => Navigator.push(context, CustomPageRoute(page: Signup()),),
+                    onPressed: () => Navigator.push(
+                      context,
+                      CustomPageRoute(page: Signup()),
+                    ),
                     icon: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: ElementColors.tertiary,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
                     ),
                   ),
-                Text(
-                    "Profile Information", 
+                  Text(
+                    "Profile Information",
                     style: TextStyle(
                       fontSize: media.height * 0.033,
                       fontWeight: FontWeight.bold,
@@ -76,7 +131,6 @@ class _ProfileInfoState extends State<ProfileInfo> {
                   ),
                 ],
               ),
-          
               // Email
               const SizedBox(height: 20),
               TxtField(
@@ -86,7 +140,6 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
               ),
-          
               // Last Name
               const SizedBox(height: 20),
               TxtField(
@@ -95,7 +148,6 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 hint: "Ex: Pascua",
                 controller: lastName,
               ),
-          
               // First Name
               const SizedBox(height: 20),
               TxtField(
@@ -104,7 +156,6 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 hint: "Ex: Maria Niña Grace",
                 controller: firstName,
               ),
-          
               // Middle Name
               const SizedBox(height: 20),
               TxtField(
@@ -113,24 +164,26 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 hint: "Ex: Lacson",
                 controller: midName,
               ),
-          
               // Gender
               const SizedBox(height: 20),
               RadioButtons(
-                label: 'Gender', 
-                options: ['Male', 'Female'], 
-                onChanged: (value) { setState(() { gender = value; });},
+                label: 'Gender',
+                options: const ['Male', 'Female'],
+                onChanged: (value) {
+                  setState(() {
+                    gender = value;
+                  });
+                },
                 inline: true,
               ),
-          
               // Date of birth
               const SizedBox(height: 10),
               TxtField(
                 type: TxtFieldType.services,
                 label: 'Date of Birth:',
                 hint: "ayoko muna ayusin",
+                controller: birthDate,
               ),
-          
               // Place of birth
               const SizedBox(height: 20),
               TxtField(
@@ -139,25 +192,24 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 hint: "Ex: Angeles City, Pampanga",
                 controller: birthPlace,
               ),
-          
-               // Address
+              // Address
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Address', 
+                    Text(
+                      'Address',
                       style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w400,
-                      color: ElementColors.fontColor1,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w400,
+                        color: ElementColors.fontColor1,
                       ),
                     ),
                   ],
                 ),
               ),
-              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -168,9 +220,8 @@ class _ProfileInfoState extends State<ProfileInfo> {
                     controller: houseNum,
                     width: media.width * 0.3,
                     labelFontSize: 15,
-                    customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                    customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
                   ),
-          
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Street:',
@@ -178,11 +229,10 @@ class _ProfileInfoState extends State<ProfileInfo> {
                     controller: street,
                     width: media.width * 0.5,
                     labelFontSize: 15,
-                    customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
+                    customPadding: const EdgeInsets.fromLTRB(0, 5, 30, 0),
                   ),
                 ],
               ),
-          
               const SizedBox(height: 10),
               TxtField(
                 type: TxtFieldType.services,
@@ -190,9 +240,8 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 hint: "Ex: ",
                 controller: city,
                 labelFontSize: 15,
-                customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
+                customPadding: const EdgeInsets.fromLTRB(40, 5, 30, 0),
               ),
-              
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -203,9 +252,8 @@ class _ProfileInfoState extends State<ProfileInfo> {
                     controller: province,
                     width: media.width * 0.5,
                     labelFontSize: 15,
-                    customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                    customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
                   ),
-          
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Zip Code:',
@@ -213,11 +261,10 @@ class _ProfileInfoState extends State<ProfileInfo> {
                     controller: zipCode,
                     width: media.width * 0.29,
                     labelFontSize: 15,
-                    customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                    customPadding: const EdgeInsets.fromLTRB(10, 5, 30, 0),
                   ),
                 ],
               ),
-          
               // Contact Number
               const SizedBox(height: 20),
               TxtField(
@@ -227,7 +274,6 @@ class _ProfileInfoState extends State<ProfileInfo> {
                 controller: contactNumber,
                 keyboardType: TextInputType.number,
               ),
-
               // Civil and Voter Status
               const SizedBox(height: 20),
               Row(
@@ -238,38 +284,33 @@ class _ProfileInfoState extends State<ProfileInfo> {
                     hint: "Civil Status",
                     controller: civilStatus,
                     width: media.width * 0.41,
-                    customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
+                    customPadding: const EdgeInsets.fromLTRB(30, 5, 0, 0),
                   ),
-          
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Voter Status:',
                     hint: "Voter Status",
                     controller: voterStatus,
                     width: media.width * 0.41,
-                    customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                    customPadding: const EdgeInsets.fromLTRB(10, 5, 30, 0),
                   ),
                 ],
               ),
-
-              
               const SizedBox(height: 40),
               SizedBox(
                 width: media.width * 0.5,
-                child:  Buttons(
+                child: Buttons(
                   title: "Next",
                   type: BtnType.secondary,
                   fontSize: 16,
                   height: 45,
-                  onClick: () {
-                    Navigator.push(context, CustomPageRoute(page: PwdInfo()),);
-                  },
+                  onClick: _navigateToPwdInfo,
                 ),
               ),
             ],
           ),
         ),
-      )
+      ),
     );
   }
 }

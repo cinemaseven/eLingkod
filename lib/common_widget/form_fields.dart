@@ -16,7 +16,7 @@ class TxtField extends StatelessWidget {
   final VoidCallback? onTap;
   final double? width;
   final double labelFontSize;
-  final EdgeInsets? customPadding;  // 🔹 NEW flag
+  final EdgeInsets? customPadding; // 🔹 NEW flag
 
   const TxtField({
     super.key,
@@ -31,7 +31,7 @@ class TxtField extends StatelessWidget {
     this.onTap,
     this.width,
     this.labelFontSize = 16,
-    this.customPadding,   // 🔹 default = false
+    this.customPadding, // 🔹 default = false
   });
 
   InputDecoration _getDecoration() {
@@ -46,7 +46,10 @@ class TxtField extends StatelessWidget {
             borderRadius: BorderRadius.circular(30),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: .5, horizontal: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: .5,
+            horizontal: 15,
+          ),
         );
 
       case TxtFieldType.services:
@@ -59,7 +62,10 @@ class TxtField extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 15,
+          ),
         );
 
       case TxtFieldType.profile:
@@ -72,7 +78,10 @@ class TxtField extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 10,
+            horizontal: 12,
+          ),
           suffixIcon: suffixIcon,
         );
     }
@@ -106,7 +115,7 @@ class TxtField extends StatelessWidget {
               Text(
                 label!,
                 style: TextStyle(
-                  fontSize: labelFontSize,    // 🔹 adjustable
+                  fontSize: labelFontSize, // 🔹 adjustable
                   fontWeight: FontWeight.w400,
                   color: ElementColors.fontColor1,
                 ),
@@ -233,7 +242,7 @@ class _RadioButtonsState extends State<RadioButtons> {
                       const Text("Other:", style: TextStyle(fontSize: 15)),
                     ],
                   ),
-                ]
+                ],
               ],
             ),
 
@@ -241,28 +250,28 @@ class _RadioButtonsState extends State<RadioButtons> {
           if (!isInline) ...[
             ...widget.options.map((option) {
               return RadioListTile<String>(
-                  value: option,
-                  groupValue: selectedValue,
-                  activeColor: ElementColors.primary,
-                  title: Text(option),
-                  onChanged: (value) {
-                    setState(() => selectedValue = value);
-                    widget.onChanged(value);
-                  },
+                value: option,
+                groupValue: selectedValue,
+                activeColor: ElementColors.primary,
+                title: Text(option),
+                onChanged: (value) {
+                  setState(() => selectedValue = value);
+                  widget.onChanged(value);
+                },
               );
             }),
 
             if (widget.showOther) ...[
-            RadioListTile<String>(
-                  value: "Other:",
-                  groupValue: selectedValue,
-                  activeColor: ElementColors.primary,
-                  title: const Text("Other:"),
-                  onChanged: (value) {
-                    setState(() => selectedValue = value);
-                    widget.onChanged(otherController.text);
-                  },
-                ),
+              RadioListTile<String>(
+                value: "Other:",
+                groupValue: selectedValue,
+                activeColor: ElementColors.primary,
+                title: const Text("Other:"),
+                onChanged: (value) {
+                  setState(() => selectedValue = value);
+                  widget.onChanged(otherController.text);
+                },
+              ),
               if (selectedValue == "Other:")
                 TxtField(
                   type: TxtFieldType.services,
@@ -270,7 +279,7 @@ class _RadioButtonsState extends State<RadioButtons> {
                   hint: "Please specify",
                   onTap: () => widget.onChanged(otherController.text),
                 ),
-            ]
+            ],
           ],
         ],
       ),
@@ -289,7 +298,7 @@ class CheckBoxes extends StatefulWidget {
     required this.label,
     required this.options,
     required this.onChanged,
-    this.showOther = false, 
+    this.showOther = false,
   });
 
   @override

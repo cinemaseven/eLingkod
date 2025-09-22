@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
@@ -6,6 +7,7 @@ import 'package:elingkod/pages/forgot_password.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/pages/signup.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -20,6 +22,39 @@ class _LoginState extends State<Login> {
   final TextEditingController email = TextEditingController();
   final TextEditingController contactNumber = TextEditingController();
   final TextEditingController password = TextEditingController();
+
+  Future<void> _login() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final url = Uri.parse('http://localhost:3000/login');
+    final body = {
+      'emailOrContact': useEmail ? email.text : contactNumber.text,
+      'password': password.text,
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Login successful!')),
+        );
+        Navigator.push(context, CustomPageRoute(page: const Home()));
+      } else {
+        final resBody = jsonDecode(response.body);
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(resBody['message'] ?? 'Login failed')),
+        );
+      }
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('An error occurred. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +88,9 @@ class _LoginState extends State<Login> {
                 ),
               ),
               padding: EdgeInsets.symmetric(
-                  horizontal: media.width * 0.1, vertical: media.height * 0.03),
+                horizontal: media.width * 0.1,
+                vertical: media.height * 0.03,
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -66,15 +103,15 @@ class _LoginState extends State<Login> {
                         color: ElementColors.fontColor2,
                       ),
                     ),
-                    
                     SizedBox(height: media.height * 0.04),
                     TxtField(
                       type: TxtFieldType.regis,
                       controller: useEmail ? email : contactNumber,
                       hint: useEmail ? "Email" : "Contact Number",
-                      keyboardType: useEmail ? TextInputType.emailAddress : TextInputType.number,
+                      keyboardType: useEmail
+                          ? TextInputType.emailAddress
+                          : TextInputType.number,
                     ),
-                    
                     SizedBox(height: media.height * 0.02),
                     TxtField(
                       type: TxtFieldType.regis,
@@ -83,24 +120,25 @@ class _LoginState extends State<Login> {
                       obscure: true,
                       keyboardType: TextInputType.visiblePassword,
                     ),
-
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () {
-                          Navigator.push(context, CustomPageRoute(page: ForgotPassword()));
+                          Navigator.push(
+                            context,
+                            CustomPageRoute(page: ForgotPassword()),
+                          );
                         },
                         child: Text(
-                            "Forgot Password?",
-                            style: TextStyle(
-                              color: ElementColors.fontColor2,
-                              fontSize: 12
-                            ),
+                          "Forgot Password?",
+                          style: TextStyle(
+                            color: ElementColors.fontColor2,
+                            fontSize: 12,
                           ),
                         ),
+                      ),
                     ),
-
                     SizedBox(height: media.height * 0.05),
                     SizedBox(
                       width: double.infinity,
@@ -109,12 +147,7 @@ class _LoginState extends State<Login> {
                         type: BtnType.secondary,
                         fontSize: media.width * 0.04,
                         height: media.height * 0.065,
-                        onClick: () {
-                          Navigator.push(
-                            context,
-                            CustomPageRoute(page: const Home()),
-                          );
-                        },
+                        onClick: _login,
                       ),
                     ),
                     SizedBox(height: media.height * 0.02),
@@ -193,7 +226,6 @@ class _LoginState extends State<Login> {
     );
   }
 }
-
 
 
 //mas maayos web neto!!!
