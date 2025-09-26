@@ -7,7 +7,6 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/pages/home.dart';
-import 'package:elingkod/pages/confirmation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -515,23 +514,25 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                         type: BtnType.secondary,
                         fontSize: isSmallScreen ? 16 : 14,
                         height: 45,
-                        onClick: () {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (dialogContext) => TermsPopup(
-                              onConfirmed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    CustomPageRoute(page: const ConfirmationPage()),
-                                  );
-                              },
-                            ),
-                          );
-                        },
-
+                      onClick: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (dialogContext) => TermsPopup(
+                            onConfirmed: () {
+                              Navigator.pop(dialogContext); // close TermsPopup
+                              // Delay pushReplacement until after pop is finished
+                              Future.microtask(() {
+                                Navigator.pushReplacement(
+                                  context,
+                                  CustomPageRoute(page: const Home(showConfirmation: true)),
+                                );
+                              });
+                            }
+                          ),
+                        );
+                      }
                       ),
-
                       ),
                     ),
                     // const SizedBox(height: 30),

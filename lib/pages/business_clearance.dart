@@ -6,7 +6,6 @@ import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/applicant_undertaking.dart';
-import 'package:elingkod/pages/confirmation.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -583,20 +582,24 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           type: BtnType.secondary,
                           fontSize: isSmallScreen ? 16 : 14 ,
                           height: 45,
-                          onClick: () {
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (dialogContext) => BusinessClearancePopup(
-                              onConfirmed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    CustomPageRoute(page: const ConfirmationPage()),
-                                  );
-                              },
-                            ),
-                          );
-                        },
+                      onClick: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (dialogContext) => BusinessClearancePopup(
+                            onConfirmed: () {
+                              Navigator.pop(dialogContext); // close Popup
+                              // Delay pushReplacement until after pop is finished
+                              Future.microtask(() {
+                                Navigator.pushReplacement(
+                                  context,
+                                  CustomPageRoute(page: const Home(showConfirmation: true)),
+                                );
+                              });
+                            }
+                          ),
+                        );
+                      }
                         ),
                       ),
                     ),
