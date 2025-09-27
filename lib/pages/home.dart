@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/hamburger.dart';
+import 'package:elingkod/common_widget/search_bar.dart'; 
 import 'package:elingkod/pages/barangay_clearance.dart';
 import 'package:elingkod/pages/barangay_id.dart';
 import 'package:elingkod/pages/business_clearance.dart';
@@ -28,45 +29,30 @@ class _HomeState extends State<Home> {
     {"label": "Submitted Requests", "page": const RequestStatusPage()},
   ];
 
-  List<Map<String, dynamic>> _filteredServices = [];
-
   @override
   void initState() {
     super.initState();
-    _filteredServices = _services; // show all by default
 
     // Trigger confirmation dialog after Home loads
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (widget.showConfirmation) {
-      showGeneralDialog(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black54,
-        transitionDuration: const Duration(milliseconds: 300),
-        pageBuilder: (_, __, ___) => const ConfirmationDialog(),
-        transitionBuilder: (_, anim, __, child) {
-          return Transform.scale(
-            scale: Curves.easeOutBack.transform(anim.value),
-            child: Opacity(
-              opacity: anim.value,
-              child: child,
-            ),
-          );
-        },
-      );
-    }
-  });
-  }
-
-  void _search(String query) {
-    final results = _services.where((service) {
-      return service["label"]
-          .toLowerCase()
-          .contains(query.toLowerCase());
-    }).toList();
-
-    setState(() {
-      _filteredServices = results;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.showConfirmation) {
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: false,
+          barrierColor: Colors.black54,
+          transitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (_, __, ___) => const ConfirmationDialog(),
+          transitionBuilder: (_, anim, __, child) {
+            return Transform.scale(
+              scale: Curves.easeOutBack.transform(anim.value),
+              child: Opacity(
+                opacity: anim.value,
+                child: child,
+              ),
+            );
+          },
+        );
+      }
     });
   }
 
@@ -94,55 +80,23 @@ class _HomeState extends State<Home> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ✅ Search box
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F1F1),
-                  borderRadius: BorderRadius.circular(30),
+              // Use your reusable search bar
+              CustomSearchBar<Map<String, dynamic>>(
+                items: _services,
+                itemLabel: (item) => item["label"],
+                itemBuilder: (context, item) => ListTile(
+                  title: Text(item["label"]),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _search,
-                        decoration: const InputDecoration(
-                          hintText: "Can't find what you're looking for?",
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
-                          border: InputBorder.none,
-                        ),
-                        maxLines: 1,
-                        textAlignVertical: TextAlignVertical.center,
-                      ),
-                    ),
-                  ],
-                ),
+                onItemTap: (item) {
+                  Navigator.pushReplacement(
+                    context,
+                    CustomPageRoute(page: item["page"]),
+                  );
+                },
+                hintText: "Can't find what you're looking for?",
               ),
-              SizedBox(height: responsiveHeight(20)),
 
-              // 🔎 Search results
-              if (_searchController.text.isNotEmpty)
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _filteredServices.length,
-                  itemBuilder: (context, index) {
-                    final service = _filteredServices[index];
-                    return ListTile(
-                      title: Text(service["label"]),
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          CustomPageRoute(page: service["page"]),
-                        );
-                      },
-                    );
-                  },
-                ),
+              SizedBox(height: responsiveHeight(20)),
 
               // Show logo + buttons only if not searching
               if (_searchController.text.isEmpty) ...[
@@ -206,7 +160,7 @@ class _HomeState extends State<Home> {
             onPressed: () {
               Navigator.push(
                 context,
-                CustomPageRoute(page: const ProfilePage()),
+                CustomPageRoute(page: const Profile()),
               );
             },
             child: Row(
@@ -236,13 +190,11 @@ class _HomeState extends State<Home> {
         required Color color,
         Color? textColor,  
         Color? borderColor,
-        // Color borderColor = Colors.transparent,
         required double fontSize,
         required double height,
         required VoidCallback onTap,
       }) {
 
-    // make text and border for submitted requests black 
     final effectiveTextColor = textColor ?? (label == "Submitted Requests" ? Colors.black : Colors.white);
     final effectiveBorderColor = borderColor ?? (label == "Submitted Requests" ? Colors.black : Colors.transparent);
 
@@ -288,4 +240,3 @@ class _HomeState extends State<Home> {
     }
   }
 }
-
