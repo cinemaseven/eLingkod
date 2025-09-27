@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 // for textfields
 enum TxtFieldType { regis, services, profile }
 
-class TxtField extends StatelessWidget {
+// 1. TxtField is now a StatefulWidget
+class TxtField extends StatefulWidget {
   final TxtFieldType type;
   final String hint;
   final String? label;
@@ -16,9 +17,11 @@ class TxtField extends StatelessWidget {
   final VoidCallback? onTap;
   final double? width;
   final double labelFontSize;
-  final EdgeInsets? customPadding; // 🔹 NEW flag
+  final EdgeInsets? customPadding;
+  final String? Function(String?)? validator; // Add validator here
 
-  const TxtField({
+  // 5. Remove 'const' keyword
+  TxtField({
     super.key,
     required this.type,
     required this.hint,
@@ -31,14 +34,29 @@ class TxtField extends StatelessWidget {
     this.onTap,
     this.width,
     this.labelFontSize = 16,
-    this.customPadding, // 🔹 default = false
+    this.customPadding,
+    this.validator,
   });
 
+  @override
+  // 2. Create the State class
+  State<TxtField> createState() => _TxtFieldState();
+}
+
+// 3. The private State class
+class _TxtFieldState extends State<TxtField> {
+  // Move _getDecoration here
   InputDecoration _getDecoration() {
-    switch (type) {
+    final TextStyle errorTextStyle = TextStyle(
+      color: ElementColors.tertiary, // Use a clear, high-contrast color for errors
+      fontSize: 12,
+      height: 1.2, // Ensure it takes up vertical space
+    );
+    
+    switch (widget.type) {
       case TxtFieldType.regis:
         return InputDecoration(
-          hintText: hint,
+          hintText: widget.hint,
           hintStyle: TextStyle(color: ElementColors.placeholder),
           filled: true,
           fillColor: ElementColors.fontColor2,
@@ -50,12 +68,13 @@ class TxtField extends StatelessWidget {
             vertical: .5,
             horizontal: 15,
           ),
-          suffixIcon: suffixIcon,
+          suffixIcon: widget.suffixIcon,
+          errorStyle: errorTextStyle,
         );
 
       case TxtFieldType.services:
         return InputDecoration(
-          hintText: hint,
+          hintText: widget.hint,
           hintStyle: TextStyle(color: ElementColors.placeholder),
           filled: true,
           fillColor: ElementColors.serviceField,
@@ -67,11 +86,12 @@ class TxtField extends StatelessWidget {
             vertical: 14,
             horizontal: 15,
           ),
+          errorStyle: errorTextStyle,
         );
 
       case TxtFieldType.profile:
         return InputDecoration(
-          hintText: hint,
+          hintText: widget.hint,
           hintStyle: TextStyle(color: ElementColors.placeholder),
           filled: true,
           fillColor: ElementColors.fontColor2,
@@ -83,41 +103,44 @@ class TxtField extends StatelessWidget {
             vertical: 10,
             horizontal: 12,
           ),
+          errorStyle: errorTextStyle,
           // suffixIcon: suffixIcon,
         );
     }
   }
 
+  // 4. Move build method here
   @override
   Widget build(BuildContext context) {
-    final textField = TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscure,
-      readOnly: readOnly,
-      onTap: onTap,
+    // 4. Use TextFormField instead of TextField for validation
+    final textField = TextFormField(
+      controller: widget.controller,
+      keyboardType: widget.keyboardType,
+      obscureText: widget.obscure,
+      readOnly: widget.readOnly,
+      onTap: widget.onTap,
       style: const TextStyle(fontSize: 13),
       decoration: _getDecoration(),
+      validator: widget.validator, // Pass the validator
     );
 
     Widget fieldWidget = textField;
 
-    // 🔹 Wrap with SizedBox if width is specified
-    if (width != null) {
-      fieldWidget = SizedBox(width: width, child: textField);
+    if (widget.width != null) {
+      fieldWidget = SizedBox(width: widget.width, child: textField);
     }
 
-    if (type == TxtFieldType.services) {
+    if (widget.type == TxtFieldType.services) {
       return Padding(
-        padding: customPadding ?? EdgeInsets.fromLTRB(30, 5, 30, 0),
+        padding: widget.customPadding ?? const EdgeInsets.fromLTRB(30, 5, 30, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (label != null) ...[
+            if (widget.label != null) ...[
               Text(
-                label!,
+                widget.label!,
                 style: TextStyle(
-                  fontSize: labelFontSize, // 🔹 adjustable
+                  fontSize: widget.labelFontSize,
                   fontWeight: FontWeight.w400,
                   color: ElementColors.fontColor1,
                 ),
@@ -146,13 +169,15 @@ class TxtField extends StatelessWidget {
   }
 }
 
-class RadioButtons extends StatefulWidget {
+// RadioButtons is now a StatelessWidget and returns a FormField
+class RadioButtons extends StatelessWidget {
   final String label;
   final List<String> options;
   final String? initialValue;
   final Function(String?) onChanged;
   final bool inline;
   final bool showOther;
+  final String? Function(String?)? validator; // New: Add validator
 
   const RadioButtons({
     super.key,
@@ -162,155 +187,190 @@ class RadioButtons extends StatefulWidget {
     required this.onChanged,
     this.inline = false,
     this.showOther = false,
+    this.validator, // New: Add validator
   });
 
   @override
-  State<RadioButtons> createState() => _RadioButtonsState();
-}
-
-class _RadioButtonsState extends State<RadioButtons> {
-  String? selectedValue;
-  TextEditingController otherController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    selectedValue = widget.initialValue;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    bool isInline = widget.inline;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // label
-          Text(
-            "${widget.label}:",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: ElementColors.fontColor1,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Inline style
-          if (isInline)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ...widget.options.map((option) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
+    return FormField<String>(
+      initialValue: initialValue,
+      validator: validator,
+      builder: (FormFieldState<String> state) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${label}:",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: ElementColors.fontColor1,
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Use a stateful builder to manage the internal state of the radio buttons
+              StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  return Column(
                     children: [
-                      Radio<String>(
-                        value: option,
-                        groupValue: selectedValue,
-                        fillColor: WidgetStateProperty.resolveWith<Color>(
-                          (states) => states.contains(WidgetState.selected)
-                              ? ElementColors.primary
-                              : ElementColors.buttonField,
+                      // Inline style
+                      if (inline)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            ...options.map((option) {
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Radio<String>(
+                                    value: option,
+                                    groupValue: state.value,
+                                    fillColor: WidgetStateProperty.resolveWith<Color>(
+                                      (states) => states.contains(WidgetState.selected)
+                                          ? ElementColors.primary
+                                          : ElementColors.buttonField,
+                                    ),
+                                    onChanged: (value) {
+                                      state.didChange(value);
+                                      onChanged(value);
+                                      setState(() {});
+                                    },
+                                  ),
+                                  Text(option, style: const TextStyle(fontSize: 15)),
+                                ],
+                              );
+                            }),
+                            if (showOther) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Radio<String>(
+                                    value: "Other:",
+                                    groupValue: state.value,
+                                    fillColor: WidgetStateProperty.resolveWith<Color>(
+                                      (states) => states.contains(WidgetState.selected)
+                                          ? ElementColors.primary
+                                          : ElementColors.buttonField,
+                                    ),
+                                    onChanged: (value) {
+                                      state.didChange(value);
+                                      onChanged(value);
+                                      setState(() {});
+                                    },
+                                  ),
+                                  const Text("Other:", style: TextStyle(fontSize: 15)),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
-                        onChanged: (value) {
-                          setState(() => selectedValue = value);
-                          widget.onChanged(value);
-                        },
-                      ),
-                      Text(option, style: const TextStyle(fontSize: 15)),
+                      // Stacked style
+                      if (!inline) ...[
+                        ...options.map((option) {
+                          return RadioListTile<String>(
+                            value: option,
+                            groupValue: state.value,
+                            activeColor: ElementColors.primary,
+                            title: Text(option),
+                            onChanged: (value) {
+                              state.didChange(value);
+                              onChanged(value);
+                            },
+                          );
+                        }),
+                        if (showOther) ...[
+                          RadioListTile<String>(
+                            value: "Other:",
+                            groupValue: state.value,
+                            activeColor: ElementColors.primary,
+                            title: const Text("Other:"),
+                            onChanged: (value) {
+                              state.didChange(value);
+                              onChanged(value);
+                            },
+                          ),
+                        ],
+                      ],
+                      // New: Show error text
+                      if (state.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+                          child: Text(
+                            state.errorText ?? '',
+                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                          ),
+                        ),
                     ],
                   );
-                }),
-                if (widget.showOther) ...[
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Radio<String>(
-                        value: "Other:",
-                        groupValue: selectedValue,
-                        fillColor: WidgetStateProperty.resolveWith<Color>(
-                          (states) => states.contains(WidgetState.selected)
-                              ? ElementColors.primary
-                              : ElementColors.buttonField,
-                        ),
-                        onChanged: (value) {
-                          setState(() => selectedValue = value);
-                          widget.onChanged(otherController.text);
-                        },
-                      ),
-                      const Text("Other:", style: TextStyle(fontSize: 15)),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-
-          // Stacked style
-          if (!isInline) ...[
-            ...widget.options.map((option) {
-              return RadioListTile<String>(
-                value: option,
-                groupValue: selectedValue,
-                activeColor: ElementColors.primary,
-                title: Text(option),
-                onChanged: (value) {
-                  setState(() => selectedValue = value);
-                  widget.onChanged(value);
-                },
-              );
-            }),
-
-            if (widget.showOther) ...[
-              RadioListTile<String>(
-                value: "Other:",
-                groupValue: selectedValue,
-                activeColor: ElementColors.primary,
-                title: const Text("Other:"),
-                onChanged: (value) {
-                  setState(() => selectedValue = value);
-                  widget.onChanged(otherController.text);
                 },
               ),
-              if (selectedValue == "Other:")
-                TxtField(
-                  type: TxtFieldType.services,
-                  controller: otherController,
-                  hint: "Please specify",
-                  onTap: () => widget.onChanged(otherController.text),
-                ),
             ],
-          ],
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
-class CheckBoxes extends StatefulWidget {
+// The main CheckBoxes FormField
+class CheckBoxes extends FormField<List<String>> {
+  CheckBoxes({
+    super.key,
+    required String label,
+    required List<String> options,
+    required Function(List<String>) onChanged,
+    bool showOther = false,
+    String? Function(List<String>?)? validator,
+  }) : super(
+          validator: validator,
+          builder: (FormFieldState<List<String>> state) {
+            return _CheckBoxesContent(
+              label: label,
+              options: options,
+              onChanged: onChanged,
+              showOther: showOther,
+              formFieldState: state,
+            );
+          },
+        );
+}
+
+// Internal StatefulWidget to manage the checkbox state
+class _CheckBoxesContent extends StatefulWidget {
   final String label;
   final List<String> options;
   final Function(List<String>) onChanged;
   final bool showOther;
+  final FormFieldState<List<String>> formFieldState;
 
-  const CheckBoxes({
-    super.key,
+  const _CheckBoxesContent({
     required this.label,
     required this.options,
     required this.onChanged,
-    this.showOther = false,
+    required this.showOther,
+    required this.formFieldState,
   });
 
   @override
-  State<CheckBoxes> createState() => _CheckBoxesState();
+  _CheckBoxesContentState createState() => _CheckBoxesContentState();
 }
 
-class _CheckBoxesState extends State<CheckBoxes> {
+class _CheckBoxesContentState extends State<_CheckBoxesContent> {
   List<String> selectedValues = [];
   bool otherSelected = false;
-  TextEditingController otherController = TextEditingController();
+  final TextEditingController otherController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the selected values if the form field has a pre-existing value
+    selectedValues = widget.formFieldState.value ?? [];
+    otherController.addListener(() {
+      _updateOtherValue();
+    });
+  }
 
   void _updateSelection(String value, bool isSelected) {
     setState(() {
@@ -320,7 +380,30 @@ class _CheckBoxesState extends State<CheckBoxes> {
         selectedValues.remove(value);
       }
       widget.onChanged(selectedValues);
+      widget.formFieldState.didChange(selectedValues);
     });
+  }
+
+  void _updateOtherValue() {
+    // This method handles adding/removing the 'Other' text to the selected values.
+    // It's called whenever the 'other' text field changes.
+    setState(() {
+      final otherText = "Other: ${otherController.text}";
+      // Remove the old 'Other' value
+      selectedValues.removeWhere((v) => v.startsWith("Other:"));
+      // Add the new 'Other' value if the text field is not empty
+      if (otherController.text.isNotEmpty) {
+        selectedValues.add(otherText);
+      }
+      widget.onChanged(selectedValues);
+      widget.formFieldState.didChange(selectedValues);
+    });
+  }
+
+  @override
+  void dispose() {
+    otherController.dispose();
+    super.dispose();
   }
 
   @override
@@ -330,7 +413,6 @@ class _CheckBoxesState extends State<CheckBoxes> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // label
           Text(
             widget.label,
             style: TextStyle(
@@ -340,8 +422,6 @@ class _CheckBoxesState extends State<CheckBoxes> {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Standard options
           ...widget.options.map((option) {
             return CheckboxListTile(
               value: selectedValues.contains(option),
@@ -353,8 +433,6 @@ class _CheckBoxesState extends State<CheckBoxes> {
               },
             );
           }).toList(),
-
-          // "Other" option if enabled
           if (widget.showOther) ...[
             CheckboxListTile(
               value: otherSelected,
@@ -365,10 +443,12 @@ class _CheckBoxesState extends State<CheckBoxes> {
                 setState(() {
                   otherSelected = checked ?? false;
                   if (!otherSelected) {
+                    otherController.clear();
                     selectedValues.removeWhere((v) => v.startsWith("Other:"));
                   }
+                  widget.onChanged(selectedValues);
+                  widget.formFieldState.didChange(selectedValues);
                 });
-                widget.onChanged(selectedValues);
               },
             ),
             if (otherSelected)
@@ -376,15 +456,24 @@ class _CheckBoxesState extends State<CheckBoxes> {
                 type: TxtFieldType.services,
                 controller: otherController,
                 hint: "Please specify",
-                onTap: () {
-                  setState(() {
-                    selectedValues.removeWhere((v) => v.startsWith("Other:"));
-                    selectedValues.add("Other: ${otherController.text}");
-                  });
-                  widget.onChanged(selectedValues);
+                validator: (value) {
+                  // Validate the 'Other' text field only when 'Other' is selected
+                  if (otherSelected && (value == null || value.isEmpty)) {
+                    return "Please specify the 'Other' option.";
+                  }
+                  return null;
                 },
               ),
           ],
+          // Show error text from the FormFieldState
+          if (widget.formFieldState.hasError)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+              child: Text(
+                widget.formFieldState.errorText ?? '',
+                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+              ),
+            ),
         ],
       ),
     );

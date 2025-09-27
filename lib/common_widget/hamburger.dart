@@ -1,13 +1,13 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/pages/home.dart';
-import 'package:elingkod/pages/registration.dart';
-import 'package:flutter/material.dart';
 import 'package:elingkod/pages/barangay_clearance.dart';
 import 'package:elingkod/pages/barangay_id.dart';
 import 'package:elingkod/pages/business_clearance.dart';
+import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/pages/profile.dart';
+import 'package:elingkod/pages/registration.dart';
 import 'package:elingkod/pages/request_status.dart';
+import 'package:flutter/material.dart';
 
 class Hamburger extends StatelessWidget {
   const Hamburger({super.key});
@@ -106,7 +106,7 @@ class Hamburger extends StatelessWidget {
                     fontSize: menuFontSize,
                     onTap: () => Navigator.pushReplacement(
                       context,
-                      CustomPageRoute(page: const ProfilePage()), // Replace with Profile()
+                      CustomPageRoute(page: const Profile()), // Replace with Profile()
                     ),
                   ),
                   _buildMenuItem(

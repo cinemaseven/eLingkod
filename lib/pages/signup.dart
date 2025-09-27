@@ -1,13 +1,12 @@
-import 'dart:convert';
-
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
+import 'package:elingkod/common_widget/otpVerify_popup.dart';
 import 'package:elingkod/pages/login.dart';
-import 'package:elingkod/pages/profile_info.dart';
+import 'package:elingkod/services/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -17,16 +16,16 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
+  final _formKey = GlobalKey<FormState>();
   bool useEmail = true;
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
 
   TextEditingController email = TextEditingController();
-  TextEditingController contactNumber = TextEditingController();
+  TextEditingController phoneNumber = TextEditingController();
   TextEditingController password = TextEditingController();
   TextEditingController rePassword = TextEditingController();
 
-  // New state variables for password validation
   Map<String, bool> _validationStatus = {
     'isLengthValid': false,
     'hasUppercase': false,
@@ -45,7 +44,7 @@ class _SignupState extends State<Signup> {
     password.removeListener(_checkPasswordValidation);
     password.dispose();
     email.dispose();
-    contactNumber.dispose();
+    phoneNumber.dispose();
     rePassword.dispose();
     super.dispose();
   }
@@ -72,107 +71,89 @@ class _SignupState extends State<Signup> {
     return score / 4.0;
   }
 
-  Future<void> _signup() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // Front-end email and contact number validation
-    if (useEmail &&
-        !RegExp(
-          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
-        ).hasMatch(email.text)) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Please enter a valid email address.'),
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required';
     }
+    return null;
+  }
 
-    if (!useEmail && contactNumber.text.length != 11) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Contact number must be exactly 11 digits.'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+  void _toggleRegistrationMethod() {
+    setState(() {
+      // 1. Toggle the field type
+      useEmail = !useEmail;
 
-    if (!_validationStatus.values.every((element) => element)) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Please meet all password requirements.'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+      // 2. Clear all relevant fields
+      email.clear();
+      phoneNumber.clear();
+      password.clear();
+      rePassword.clear();
 
-    if (password.text != rePassword.text) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Passwords do not match.'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+      // 3. CRUCIAL: Reset the Form to clear all validation messages
+      _formKey.currentState?.reset();
+    });
+    // Ensure password indicators are also reset visually
+    _checkPasswordValidation();
+  }
 
-    final url = Uri.parse('http://localhost:3000/signup');
-    final body = {
-      'emailOrContact': useEmail ? email.text : contactNumber.text,
-      'password': password.text,
-    };
-
+Future<void> _signup() async {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  if (_formKey.currentState!.validate()) {
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
-
-      final resBody = jsonDecode(response.body);
-
-      if (response.statusCode == 201) {
+      if (useEmail) {
+        // Sign up with email
+        await AuthService().signUp(
+          email: email.text.trim(),
+          password: password.text,
+        );
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Sign up successful!'),
-            duration: const Duration(seconds: 2),
+            content: Text('Verification link sent to your email!'),
+            duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-          ),
-        );
-        Navigator.push(
-          context,
-          CustomPageRoute(
-            page: ProfileInfo(
-              emailOrContact: useEmail ? email.text : contactNumber.text,
-            ),
           ),
         );
       } else {
+        // Sign up with phone number
+        await AuthService().signUp(
+          phoneNumber: phoneNumber.text.trim(),
+          password: password.text,
+        );
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(resBody['message'] ?? 'Sign up failed'),
+            content: Text('OTP sent to your phone number!'),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
         );
+        // Show OTP dialog
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return OtpverifyPopup(phoneNumber: phoneNumber.text.trim());
+          },
+        );
       }
+    } on AuthException catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Auth Error: ${e.message}'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('An error occurred. Please try again.'),
+          content: Text('An unexpected error occurred: $e'),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -185,217 +166,251 @@ class _SignupState extends State<Signup> {
         backgroundColor: ElementColors.primary,
         iconTheme: IconThemeData(color: ElementColors.fontColor2),
       ),
-      body: Column(
-        children: [
-          SizedBox(height: media.height * 0.02),
-          Center(
-            child: Image.asset(
-              "assets/images/logo.png",
-              width: media.width * 0.5,
-            ),
-          ),
-          SizedBox(height: media.height * 0.03),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: ElementColors.primary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
+      body: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(height: media.height * 0.02),
+              Center(
+                child: Image.asset(
+                  "assets/images/logo.png",
+                  width: media.width * 0.5,
                 ),
               ),
-              padding: EdgeInsets.symmetric(
-                horizontal: media.width * 0.1,
-                vertical: media.height * 0.03,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        fontSize: media.width * 0.08,
-                        color: ElementColors.fontColor2,
+              SizedBox(height: media.height * 0.03),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: ElementColors.primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: media.width * 0.1,
+                  vertical: media.height * 0.03,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          fontSize: media.width * 0.08,
+                          color: ElementColors.fontColor2,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: media.height * 0.04),
-                    if (useEmail)
+                      SizedBox(height: media.height * 0.04),
+                      if (useEmail)
+                        TxtField(
+                          type: TxtFieldType.regis,
+                          controller: email,
+                          hint: "Email (e.g., example@gmail.com)",
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            final requiredError = _requiredValidator(value);
+                            if (requiredError != null) return requiredError;
+                        
+                            if (!RegExp(
+                                    r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                                .hasMatch(value!)) {
+                              return 'Please enter a valid email address.';
+                            }
+                            return null;
+                          },
+                        )
+                      else
+                        TxtField(
+                          type: TxtFieldType.regis,
+                          controller: phoneNumber,
+                          hint: "Contact Number (e.g., 0928xxxxxxx)",
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            final requiredError = _requiredValidator(value);
+                            if (requiredError != null) return requiredError;
+                            if (value!.length != 11) {
+                              return 'Contact number must be 11 digits';
+                            }
+                            return null;
+                          },
+                        ),
+                      SizedBox(height: media.height * 0.02),
                       TxtField(
                         type: TxtFieldType.regis,
-                        controller: email,
-                        hint: "Email",
-                        keyboardType: TextInputType.emailAddress,
-                      )
-                    else
-                      TxtField(
-                        type: TxtFieldType.regis,
-                        controller: contactNumber,
-                        hint: "Contact Number",
-                        keyboardType: TextInputType.number,
-                      ),
-                    SizedBox(height: media.height * 0.02),
-                    TxtField(
-                      type: TxtFieldType.regis,
-                      controller: password,
-                      hint: "Password",
-                      obscure: _obscurePassword,
-                      keyboardType: TextInputType.visiblePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: ElementColors.primary,
+                        controller: password,
+                        hint: "Password",
+                        obscure: _obscurePassword,
+                        keyboardType: TextInputType.visiblePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            color: ElementColors.primary,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
+                        validator: (value) {
+                          final requiredError = _requiredValidator(value);
+                          if (requiredError != null) return requiredError;
+                        
+                          if (!_validationStatus.values.every((element) => element)) {
+                            return 'Please meet all password requirements';
+                          }
+                          return null;
                         },
                       ),
-                    ),
-                    // Password Validation Checklist
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildValidationRow(
-                            '8 or more characters',
-                            _validationStatus['isLengthValid']!,
-                          ),
-                          _buildValidationRow(
-                            'Uppercase & lowercase letters',
-                            _validationStatus['hasUppercase']! &&
-                                _validationStatus['hasLowercase']!,
-                          ),
-                          _buildValidationRow(
-                            'At least one number',
-                            _validationStatus['hasNumber']!,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Password Strength:',
-                            style: TextStyle(color: ElementColors.fontColor2),
-                          ),
-                          SizedBox(height: 5),
-                          LinearProgressIndicator(
-                            value: _passwordStrength,
-                            backgroundColor: ElementColors.primary,
-                            color: _passwordStrength > 0.75
-                                ? Colors.green
-                                : _passwordStrength > 0.5
-                                ? Colors.yellow
-                                : ElementColors.tertiary,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: media.height * 0.02),
-                    TxtField(
-                      type: TxtFieldType.regis,
-                      controller: rePassword,
-                      hint: "Re-enter password",
-                      obscure: _obscureRePassword,
-                      keyboardType: TextInputType.visiblePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureRePassword ? Icons.visibility_off : Icons.visibility,
-                          color: ElementColors.primary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureRePassword = !_obscureRePassword;
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(height: media.height * 0.05),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Buttons(
-                        title: "Sign Up",
-                        type: BtnType.secondary,
-                        fontSize: media.width * 0.04,
-                        height: media.height * 0.065,
-                        onClick: _signup,
-                      ),
-                    ),
-                    SizedBox(height: media.height * 0.02),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(
-                            color: ElementColors.fontColor2,
-                            thickness: 1,
-                            endIndent: 10,
-                          ),
-                        ),
-                        Text(
-                          "or",
-                          style: TextStyle(color: ElementColors.fontColor2),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: ElementColors.fontColor2,
-                            thickness: 1,
-                            indent: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: media.height * 0.02),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Buttons(
-                        title: useEmail
-                            ? "Sign up using contact number"
-                            : "Sign up using email",
-                        type: BtnType.tertiary,
-                        fontSize: media.width * 0.04,
-                        height: media.height * 0.065,
-                        onClick: () {
-                          setState(() {
-                            useEmail = !useEmail;
-                            email.clear();
-                            contactNumber.clear();
-                            password.clear();
-                            rePassword.clear();
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(height: media.height * 0.03),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(context, CustomPageRoute(page: Login()));
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Already have an account? ",
-                          style: TextStyle(
-                            color: ElementColors.fontColor2,
-                            fontWeight: FontWeight.normal,
-                            fontSize: media.width * 0.035,
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextSpan(
-                              text: "Log In",
-                              style: TextStyle(
-                                color: ElementColors.fontColor2,
-                                fontWeight: FontWeight.bold,
-                                fontSize: media.width * 0.035,
-                              ),
+                            _buildValidationRow(
+                              '8 or more characters',
+                              _validationStatus['isLengthValid']!,
+                            ),
+                            _buildValidationRow(
+                              'Uppercase & lowercase letters',
+                              _validationStatus['hasUppercase']! &&
+                                  _validationStatus['hasLowercase']!,
+                            ),
+                            _buildValidationRow(
+                              'At least one number',
+                              _validationStatus['hasNumber']!,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Password Strength:',
+                              style: TextStyle(color: ElementColors.fontColor2),
+                            ),
+                            SizedBox(height: 5),
+                            LinearProgressIndicator(
+                              value: _passwordStrength,
+                              backgroundColor: ElementColors.primary,
+                              color: _passwordStrength > 0.75
+                                  ? Colors.green
+                                  : _passwordStrength > 0.5
+                                      ? Colors.yellow
+                                      : ElementColors.tertiary,
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: media.height * 0.02),
+                      TxtField(
+                        type: TxtFieldType.regis,
+                        controller: rePassword,
+                        hint: "Re-enter password",
+                        obscure: _obscureRePassword,
+                        keyboardType: TextInputType.visiblePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureRePassword ? Icons.visibility_off : Icons.visibility,
+                            color: ElementColors.primary,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureRePassword = !_obscureRePassword;
+                            });
+                          },
+                        ),
+                        validator: (value) {
+                          final requiredError = _requiredValidator(value);
+                          if (requiredError != null) return requiredError;
+                        
+                          if (value != password.text) {
+                            return 'Passwords do no match';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: media.height * 0.05),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Buttons(
+                          title: "Sign Up",
+                          type: BtnType.secondary,
+                          fontSize: media.width * 0.04,
+                          height: media.height * 0.065,
+                          onClick: _signup,
+                        ),
+                      ),
+                      SizedBox(height: media.height * 0.02),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: ElementColors.fontColor2,
+                              thickness: 1,
+                              endIndent: 10,
+                            ),
+                          ),
+                          Text(
+                            "or",
+                            style: TextStyle(color: ElementColors.fontColor2),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: ElementColors.fontColor2,
+                              thickness: 1,
+                              indent: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: media.height * 0.02),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Buttons(
+                          title: useEmail
+                              ? "Sign up using contact number"
+                              : "Sign up using email",
+                          type: BtnType.tertiary,
+                          fontSize: media.width * 0.04,
+                          height: media.height * 0.065,
+                          onClick: () {
+                            _toggleRegistrationMethod();
+                          },
+                        ),
+                      ),
+                      SizedBox(height: media.height * 0.03),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, CustomPageRoute(page: Login()));
+                        },
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Already have an account? ",
+                            style: TextStyle(
+                              color: ElementColors.fontColor2,
+                              fontWeight: FontWeight.normal,
+                              fontSize: media.width * 0.035,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: "Log In",
+                                style: TextStyle(
+                                  color: ElementColors.fontColor2,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: media.width * 0.035,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
