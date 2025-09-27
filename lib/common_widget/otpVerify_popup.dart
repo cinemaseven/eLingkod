@@ -30,28 +30,32 @@ class _OtpverifyPopupState extends State<OtpverifyPopup> {
         Navigator.push(
           context,
           CustomPageRoute(
-            page: ProfileInfo(
-              emailOrContact: widget.phoneNumber,
-            ),
+            page: ProfileInfo(emailOrContact: widget.phoneNumber),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OTP Verification Failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('OTP Verification Failed: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Enter OTP'),
-      backgroundColor: ElementColors.primary,
+      title: Text(
+        'Enter OTP',
+        style: TextStyle(color: ElementColors.fontColor2),
+      ),
+      backgroundColor: ElementColors.tertiary,
       content: TextField(
         controller: _otpController,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           hintText: "Enter the code sent to your phone",
+          hintStyle: TextStyle(
+            color: ElementColors.placeholder.withOpacity(0.5),
+          ),
         ),
         keyboardType: TextInputType.number,
       ),
@@ -60,11 +64,17 @@ class _OtpverifyPopupState extends State<OtpverifyPopup> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: const Text('Cancel'),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: ElementColors.fontColor2),
+          ),
         ),
         TextButton(
           onPressed: _verifyOtp,
-          child: const Text('Verify'),
+          child: Text(
+            'Verify',
+            style: TextStyle(color: ElementColors.fontColor2),
+          ),
         ),
       ],
     );
