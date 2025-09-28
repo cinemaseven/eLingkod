@@ -6,7 +6,6 @@ import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/pages/home.dart';
-import 'package:elingkod/pages/profile_info.dart';
 import 'package:elingkod/services/userData_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,29 +49,78 @@ class _PwdInfoState extends State<PwdInfo> {
     }
   }
 
- // REFACTORED: Function now calls the service method for all persistence logic
   void _createProfile() async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // 1. Validate the form.
     if (_formKey.currentState!.validate()) {
-      try {
-        final String idNumber = idNum.text.trim();
+      // 2. Add specific validation for PWD fields only if the user answers "Yes".
+      if (yesOrNo == 'Yes') {
+        if (_frontImage == null) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                "Please upload the Front PWD ID.",
+                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold),
+              ),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.fontColor2,
+            ),
+          );
+          return;
+        }
+        if (_backImage == null) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                "Please upload the Back PWD ID.",
+                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold),
+              ),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.fontColor2,
+            ),
+          );
+          return;
+        }
+      }
+      
+      // REMOVE THIS AFTER
+      print('Initial Profile Data: ${widget.profileData}');
+      print('Yes/No: $yesOrNo');
+      print('ID Number: ${idNum.text}');
+      print('Front Image: $_frontImage');
+      print('Back Image: $_backImage');
 
-        // 2. Call the service to handle data upload, DB upsert, and metadata update
+      try {
+        // Get ID number, but only if "Yes" is selected. Otherwise, set it to null.
+        final String? idNumber = (yesOrNo == 'Yes') ? idNum.text.trim() : null;
+
+        // Set images to null if the user selected "No"
+        final File? frontImage = (yesOrNo == 'Yes') ? _frontImage : null;
+        final File? backImage = (yesOrNo == 'Yes') ? _backImage : null;
+
+        // 3. Call the service to handle data upload, DB upsert, and metadata update
         await _userDataService.saveCompleteOnboardingProfile(
           initialProfileData: widget.profileData,
           yesOrNo: yesOrNo,
           idNum: idNumber,
-          frontImage: _frontImage,
-          backImage: _backImage,
+          frontImage: frontImage,
+          backImage: backImage,
         );
 
-        // 3. Show success message and navigate to the Home page.
+        // 4. Show success message and navigate to the Home page.
         scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('Profile created successfully!')),
+          SnackBar(
+            content: Text('Profile created successfully!',
+                style: TextStyle(
+                    color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
+          ),
         );
-        // Use pushReplacement to prevent returning to the profile creation flow
         Navigator.of(context).pushReplacement(
           CustomPageRoute(page: const Home()),
         );
@@ -80,24 +128,37 @@ class _PwdInfoState extends State<PwdInfo> {
         // Handle Supabase Auth errors raised by the service
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text("Authentication Error: ${e.message}"),
-            backgroundColor: ElementColors.tertiary,
+            content: Text("Authentication Error: ${e.message}",
+                style: TextStyle(
+                    color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
       } on Exception catch (e) {
         // Catch upload errors, database errors, and custom exceptions raised by the service
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text("Error completing profile: ${e.toString().split(':').last.trim()}"),
-            backgroundColor: ElementColors.tertiary,
+            content: Text(
+                "Error completing profile: ${e.toString()}",
+                style: TextStyle(
+                    color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
       } catch (e) {
         // Catch other general errors
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text("An unexpected error occurred: ${e.toString()}"),
-            backgroundColor: ElementColors.tertiary,
+            content: Text("An unexpected error occurred: ${e.toString()}",
+                style: TextStyle(
+                    color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
       }
@@ -105,8 +166,12 @@ class _PwdInfoState extends State<PwdInfo> {
       // If validation fails, show a general error message.
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: const Text("Please fill out all required fields."),
-          backgroundColor: ElementColors.tertiary,
+          content: Text("Please fill out all required fields.",
+              style: TextStyle(
+                  color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
         ),
       );
     }
@@ -125,7 +190,7 @@ class _PwdInfoState extends State<PwdInfo> {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
@@ -138,14 +203,7 @@ class _PwdInfoState extends State<PwdInfo> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        CustomPageRoute(
-                          page: ProfileInfo(
-                            emailOrContact: widget.profileData['emailOrContact'],
-                          ),
-                        ),
-                      ),
+                      onPressed: () => Navigator.pop(context),
                       icon: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(

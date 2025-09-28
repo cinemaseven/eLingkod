@@ -1,10 +1,11 @@
 import 'dart:io';
+
+import 'package:elingkod/common_style/colors_extension.dart';
+import 'package:elingkod/common_widget/custom_pageRoute.dart';
+import 'package:elingkod/common_widget/textfields.dart';
+import 'package:elingkod/pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:elingkod/common_style/colors_extension.dart';
-import 'package:elingkod/common_widget/textfields.dart';
-import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/pages/profile.dart';
 
 class ProfileEdit extends StatefulWidget {
   final File? profileImage;
@@ -134,9 +135,12 @@ class _ProfileEditState extends State<ProfileEdit> {
     };
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Profile information updated"),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text("Profile information updated",
+          style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.fontColor2,
       ),
     );
 

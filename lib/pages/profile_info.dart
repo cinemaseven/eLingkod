@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ProfileInfo extends StatefulWidget {
-  final String emailOrContact;
-  const ProfileInfo({super.key, required this.emailOrContact});
+  const ProfileInfo({super.key});
+
+
 
   @override
   State<ProfileInfo> createState() => _ProfileInfoState();
@@ -117,22 +118,21 @@ Widget _buildCivilStatusDropdown() {
   );
 }
 
-  @override
-  void initState() {
-    super.initState();
-    // Set the email controller's initial text from the value passed to the widget.
-    email.text = widget.emailOrContact;
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required';
+    }
+    return null;
   }
 
-void _navigateToPwdInfo() {
+  void _navigateToPwdInfo() {
     if (_formKey.currentState!.validate()) {
       final profileData = {
-        'emailOrContact':  widget.emailOrContact,
         'lastName': lastName.text,
         'firstName': firstName.text,
         'middleName': midName.text,
         'gender': gender,
-        'birthDate': _selectedDate,
+        'birthDate': _selectedDate?.toIso8601String().split('T').first,
         'birthPlace': birthPlace.text,
         'houseNum': houseNum.text,
         'street': street.text,
@@ -151,8 +151,11 @@ void _navigateToPwdInfo() {
       // This is where you would show a snackbar or dialog if the form is invalid
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("All text fields and options must have values."),
-          backgroundColor: ElementColors.tertiary,
+          content: Text("All text fields and options must have values.",
+            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
         ),
       );
     }
@@ -189,7 +192,7 @@ void _navigateToPwdInfo() {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
@@ -232,12 +235,7 @@ void _navigateToPwdInfo() {
                   hint: "ninya@gmail.com",
                   controller: email,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator,
                 ),
                 // Last Name
                 const SizedBox(height: 20),
@@ -246,12 +244,7 @@ void _navigateToPwdInfo() {
                   label: 'Last Name:',
                   hint: "Ex: Pascua",
                   controller: lastName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator,
                 ),
                 // First Name
                 const SizedBox(height: 20),
@@ -260,12 +253,7 @@ void _navigateToPwdInfo() {
                   label: 'First Name:',
                   hint: "Ex: Maria Niña Grace",
                   controller: firstName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator,
                 ),
                 // Middle Name
                 const SizedBox(height: 20),
@@ -274,12 +262,7 @@ void _navigateToPwdInfo() {
                   label: 'Middle Name:',
                   hint: "Ex: Lacson",
                   controller: midName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator,
                 ),
                 // Gender
                 const SizedBox(height: 20),
@@ -319,12 +302,7 @@ void _navigateToPwdInfo() {
                       hint: "MM/DD/YYYY",
                       controller: birthDate,
                       suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                      validator: _requiredValidator,
                     ),
                   ),
                 ),
@@ -335,12 +313,7 @@ void _navigateToPwdInfo() {
                   label: 'Place of Birth:',
                   hint: "Ex: Angeles City, Pampanga",
                   controller: birthPlace,
-                  validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                  validator: _requiredValidator,
                 ),
                 // Address
                 const SizedBox(height: 20),
@@ -371,12 +344,7 @@ void _navigateToPwdInfo() {
                       width: media.width * 0.3,
                       labelFontSize: 15,
                       customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                      validator: _requiredValidator,
                     ),
                     TxtField(
                       type: TxtFieldType.services,
@@ -386,12 +354,7 @@ void _navigateToPwdInfo() {
                       width: media.width * 0.5,
                       labelFontSize: 15,
                       customPadding: const EdgeInsets.fromLTRB(0, 5, 30, 0),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                      validator: _requiredValidator,
                     ),
                   ],
                 ),
@@ -403,12 +366,7 @@ void _navigateToPwdInfo() {
                   controller: city,
                   labelFontSize: 15,
                   customPadding: const EdgeInsets.fromLTRB(40, 5, 30, 0),
-                  validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                  validator: _requiredValidator,
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -421,12 +379,7 @@ void _navigateToPwdInfo() {
                       width: media.width * 0.5,
                       labelFontSize: 15,
                       customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                      validator: _requiredValidator,
                     ),
                     TxtField(
                       type: TxtFieldType.services,
@@ -436,12 +389,7 @@ void _navigateToPwdInfo() {
                       width: media.width * 0.29,
                       labelFontSize: 15,
                       customPadding: const EdgeInsets.fromLTRB(10, 5, 30, 0),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                      validator: _requiredValidator,
                     ),
                   ],
                 ),
@@ -453,16 +401,12 @@ void _navigateToPwdInfo() {
                   hint: "Ex: 09xx xxx xxxx",
                   controller: contactNumber,
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                  validator: _requiredValidator,
                 ),
                 // Civil Status
                 const SizedBox(height: 20),
                 _buildCivilStatusDropdown(),
+                
                 // Voter Status
                 const SizedBox(height: 20),
                 RadioButtons(

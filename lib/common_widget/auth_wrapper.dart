@@ -56,15 +56,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           MaterialPageRoute(builder: (context) => const Home()),
         );
       } else {
-        // Logged in, but profile is incomplete (like after clicking confirmation link)
-        // Redirect to the first step of the profile creation flow (ProfileInfo)
-        
-        // **IMPORTANT**: If ProfileInfo requires a specific emailOrContact string 
-        // to pre-fill or use, you will need to get that from the user or the session data.
-        // For simplicity, we pass an empty string here, but ensure your ProfileInfo widget 
-        // can handle this if the data isn't available immediately.
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ProfileInfo(emailOrContact: '')),
+          MaterialPageRoute(builder: (context) => ProfileInfo()),
         );
       }
     }

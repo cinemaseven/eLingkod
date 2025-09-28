@@ -29,6 +29,8 @@
 //       final AuthResponse res = await _supabase.auth.signUp(
 //         email: email,
 //         password: password,
+//         // Custom metadata is often added here post-signup in a 'profiles' table 
+//         // for email, but keeping it simple for now.
 //       );
 //       if (res.user == null) {
 //         throw const AuthException('Sign up with email failed. User not created.');
@@ -49,6 +51,36 @@
 //       throw const AuthException('Either email or phone number must be provided.');
 //     }
 //   }
+  
+//   // --- NEW LOGIC FOR USER LOGIN ---
+//   Future<void> signInWithCredentials({
+//     required String emailOrPhone,
+//     required String password,
+//   }) async {
+//     if (emailOrPhone.isEmpty || password.isEmpty) {
+//       throw const AuthException('Email/Phone and password cannot be empty.');
+//     }
+    
+//     // Check if the input is an email (contains '@') or a phone number
+//     if (emailOrPhone.contains('@')) {
+//       // Log in with email
+//       await _supabase.auth.signInWithPassword(
+//         email: emailOrPhone,
+//         password: password,
+//       );
+//     } else {
+//       // Log in with phone number
+//       String formattedPhoneNumber = _formatPhoneNumber(emailOrPhone);
+      
+//       await _supabase.auth.signInWithPassword(
+//         phone: formattedPhoneNumber,
+//         password: password,
+//       );
+//     }
+//     // Note: If sign-in fails (user not found, bad password), Supabase throws 
+//     // an AuthException, which the caller (Registration page) will catch.
+//   }
+//   // -------------------------------
 
 //   Future<void> verifyOtp({
 //     required String phoneNumber,
@@ -67,7 +99,6 @@
 //     }
 //   }
 // }
-
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -91,6 +122,30 @@ class AuthService {
     return input;
   }
 
+  // --- NEW OTP LOGIC: Sends the OTP (Used before showing the OtpverifyPopup) ---
+  /// Sends an OTP token to the provided email or phone number using signInWithOtp.
+  Future<void> sendOtp({
+    String? email,
+    String? phoneNumber,
+  }) async {
+    if (email != null && email.isNotEmpty) {
+      // Send OTP to Email (used for both sign-up confirmation and sign-in)
+      await _supabase.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: null,
+      );
+    } else if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      // Send OTP to Phone
+      String formattedPhoneNumber = _formatPhoneNumber(phoneNumber);
+      await _supabase.auth.signInWithOtp(
+        phone: formattedPhoneNumber,
+      );
+    } else {
+      throw const AuthException("Must provide either an email or a phone number to send OTP.");
+    }
+  }
+  // -----------------------------------------------------------------------------
+
   Future<void> signUp({
     String? email,
     String? phoneNumber,
@@ -100,6 +155,7 @@ class AuthService {
       final AuthResponse res = await _supabase.auth.signUp(
         email: email,
         password: password,
+        data: {'onboarding_complete': false},
         // Custom metadata is often added here post-signup in a 'profiles' table 
         // for email, but keeping it simple for now.
       );
@@ -153,18 +209,34 @@ class AuthService {
   }
   // -------------------------------
 
+  // --- UPDATED OTP LOGIC: Verifies the OTP (Called by OtpverifyPopup) ---
+  /// Verifies the OTP token for either email or phone.
   Future<void> verifyOtp({
-    required String phoneNumber,
     required String token,
+    String? email,
+    String? phoneNumber,
   }) async {
-    // Format the phone number before verifying
-    String formattedPhoneNumber = _formatPhoneNumber(phoneNumber);
+    final AuthResponse res;
     
-    final AuthResponse res = await _supabase.auth.verifyOTP(
-      phone: formattedPhoneNumber,
-      token: token,
-      type: OtpType.sms,
-    );
+    if (email != null && email.isNotEmpty) {
+      // Verify Email OTP
+      res = await _supabase.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.email, // CRUCIAL: Specifies verification type for email
+      );
+    } else if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      // Verify Phone OTP
+      String formattedPhoneNumber = _formatPhoneNumber(phoneNumber);
+      res = await _supabase.auth.verifyOTP(
+        phone: formattedPhoneNumber,
+        token: token,
+        type: OtpType.sms, // CRUCIAL: Specifies verification type for SMS
+      );
+    } else {
+      throw const AuthException("Cannot verify OTP without knowing the target (email or phone).");
+    }
+
     if (res.user == null) {
       throw const AuthException('OTP verification failed.');
     }

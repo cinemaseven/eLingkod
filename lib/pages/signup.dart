@@ -78,24 +78,6 @@ class _SignupState extends State<Signup> {
     return null;
   }
 
-  void _toggleRegistrationMethod() {
-    setState(() {
-      // 1. Toggle the field type
-      useEmail = !useEmail;
-
-      // 2. Clear all relevant fields
-      email.clear();
-      phoneNumber.clear();
-      password.clear();
-      rePassword.clear();
-
-      // 3. CRUCIAL: Reset the Form to clear all validation messages
-      _formKey.currentState?.reset();
-    });
-    // Ensure password indicators are also reset visually
-    _checkPasswordValidation();
-  }
-
 Future<void> _signup() async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
   if (_formKey.currentState!.validate()) {
@@ -106,13 +88,24 @@ Future<void> _signup() async {
           email: email.text.trim(),
           password: password.text,
         );
+        
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Verification link sent to your email!'),
-            duration: const Duration(seconds: 4),
+            content: Text('Verification code sent to your email!', 
+              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
+        // Show OTP dialog
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return OtpverifyPopup(email: email.text.trim());
+          },
+        );
+
       } else {
         // Sign up with phone number
         await AuthService().signUp(
@@ -121,9 +114,11 @@ Future<void> _signup() async {
         );
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('OTP sent to your phone number!'),
-            duration: const Duration(seconds: 2),
+            content: Text('OTP sent to your phone number!',
+              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
         // Show OTP dialog
@@ -137,17 +132,21 @@ Future<void> _signup() async {
     } on AuthException catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Auth Error: ${e.message}'),
-          duration: const Duration(seconds: 2),
+          content: Text('Auth Error: ${e.message}',
+            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
         ),
       );
     } catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('An unexpected error occurred: $e'),
-          duration: const Duration(seconds: 2),
+          content: Text('An unexpected error occurred: $e',
+            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
         ),
       );
     }
@@ -168,7 +167,7 @@ Future<void> _signup() async {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Column(
             children: [
@@ -374,7 +373,13 @@ Future<void> _signup() async {
                           fontSize: media.width * 0.04,
                           height: media.height * 0.065,
                           onClick: () {
-                            _toggleRegistrationMethod();
+                            setState(() {
+                              useEmail = !useEmail;
+                              email.clear();
+                              phoneNumber.clear();
+                              password.clear();
+                              rePassword.clear();
+                            });
                           },
                         ),
                       ),

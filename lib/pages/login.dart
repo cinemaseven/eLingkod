@@ -57,7 +57,13 @@ void _login() async {
 
         // Success: Supabase session is established.
         scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
+          SnackBar(content: Text('Login successful!',
+            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
+          ),
+          
         );
 
         // Navigate to the HomePage. The AuthWrapper ensures correct landing 
@@ -71,16 +77,22 @@ void _login() async {
         // Handle Supabase specific errors (e.g., Invalid credentials, User not found)
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Login Failed: ${e.message}'),
-            backgroundColor: ElementColors.secondary,
+            content: Text('Login Failed: ${e.message}',
+              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
       } catch (e) {
         // Handle unexpected errors
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('An unexpected error occurred.'),
-            backgroundColor: ElementColors.secondary,
+            content: Text('An unexpected error occurred.',
+              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
           ),
         );
       } finally {
@@ -104,7 +116,7 @@ void _login() async {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: Column(
           children: [
             SizedBox(height: media.height * 0.02),

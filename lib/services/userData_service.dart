@@ -5,37 +5,69 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Defines the data structure for the user's profile for type safety.
 // This should match the columns in your 'user_details' Supabase table.
 class UserDetails {
-  final String id;
-  final String fullName;
-  final String emailOrContact;
-  final bool isPwd;
-  final String? pwdIdNumber;
-  final String? pwdIdFrontUrl;
-  final String? pwdIdBackUrl;
-  
-  // Add other profile fields here (e.g., address, birthdate, etc.)
+  final String? user_id;
+  final String? lastName;
+  final String? firstName;
+  final String? middleName;
+  final String? gender;
+  final String? birthDate;
+  final String? birthPlace;
+  final String? houseNum;
+  final String? street;
+  final String? city;
+  final String? province;
+  final String? zipCode;
+  final String? contactNumber;
+  final String? civilStatus;
+  final String? voterStatus;
+  final bool? isPwd;
+  final String? pwdIDNum;
+  final String? frontImageURL;
+  final String? backImageURL;
 
   UserDetails({
-    required this.id,
-    required this.fullName,
-    required this.emailOrContact,
-    required this.isPwd,
-    this.pwdIdNumber,
-    this.pwdIdFrontUrl,
-    this.pwdIdBackUrl,
+    this.user_id,
+    this.lastName,
+    this.firstName,
+    this.middleName,
+    this.gender,
+    this.birthDate,
+    this.birthPlace,
+    this.houseNum,
+    this.street,
+    this.city,
+    this.province,
+    this.zipCode,
+    this.contactNumber,
+    this.civilStatus,
+    this.voterStatus,
+    this.isPwd,
+    this.pwdIDNum,
+    this.frontImageURL,
+    this.backImageURL,
   });
 
-  // Factory method to convert a Supabase map (row) into a UserDetails object
   factory UserDetails.fromMap(Map<String, dynamic> map) {
     return UserDetails(
-      id: map['id'] as String,
-      fullName: map['full_name'] as String,
-      emailOrContact: map['email_or_contact'] as String, // Assuming you store this
-      isPwd: map['is_pwd'] as bool,
-      pwdIdNumber: map['pwd_id_number'] as String?,
-      pwdIdFrontUrl: map['pwd_id_front_url'] as String?,
-      pwdIdBackUrl: map['pwd_id_back_url'] as String?,
-      // Map other fields here
+      user_id: map['user_id'] as String?,
+      lastName: map['lastName'] as String?,
+      firstName: map['firstName'] as String?,
+      middleName: map['middleName'] as String?,
+      gender: map['gender'] as String?,
+      birthDate: map['birthDate'] as String?,
+      birthPlace: map['birthPlace'] as String?,
+      houseNum: map['houseNum'] as String?,
+      street: map['street'] as String?,
+      city: map['city'] as String?,
+      province: map['province'] as String?,
+      zipCode: map['zipCode'] as String?,
+      contactNumber: map['contactNumber'] as String?,
+      civilStatus: map['civilStatus'] as String?,
+      voterStatus: map['voterStatus'] as String?,
+      isPwd: map['isPwd'] as bool?,
+      pwdIDNum: map['pwdIDNum'] as String?,
+      frontImageURL: map['frontImageURL'] as String?,
+      backImageURL: map['backImageURL'] as String?,
     );
   }
 }
@@ -44,30 +76,25 @@ class UserDataService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Utility function to upload file to Supabase Storage
-  /// The 'path' argument is used as a sub-folder/identifier (e.g., 'front_id', 'back_id').
   Future<String?> _uploadFile(File file, String folderName) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
     try {
-      // Create a unique file path: id_images/{user_id}/{folderName}_{timestamp}.ext
       final fileExtension = file.path.split('.').last;
       final fileName = '${folderName}_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
       final storagePath = '${user.id}/$fileName';
 
-      // NOTE: This uses the bucket 'id_images' as defined in your code block.
       await _supabase.storage.from('id_images').upload(
         storagePath,
         file,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
       );
-      
-      // Get the public URL for the file
+
       final fileUrl = _supabase.storage.from('id_images').getPublicUrl(storagePath);
       return fileUrl;
 
     } on StorageException catch (e) {
-      // Re-throw as a generic exception to be handled by the caller
       throw Exception('Storage Upload Error: ${e.message}');
     } catch (e) {
       rethrow;
@@ -75,11 +102,10 @@ class UserDataService {
   }
 
   /// Saves the final profile data (including PWD info) and marks onboarding as complete.
-  /// Throws exceptions on failure (database or storage error).
   Future<void> saveCompleteOnboardingProfile({
     required Map<String, dynamic> initialProfileData,
     required String? yesOrNo,
-    required String idNum,
+    required String? idNum,
     required File? frontImage,
     required File? backImage,
   }) async {
@@ -93,11 +119,9 @@ class UserDataService {
     final bool isPwd = yesOrNo == 'Yes';
 
     if (isPwd) {
-      // 1. UPLOAD IMAGES
       if (frontImage != null && backImage != null) {
         frontImageUrl = await _uploadFile(frontImage, 'front_id');
         backImageUrl = await _uploadFile(backImage, 'back_id');
-
         if (frontImageUrl == null || backImageUrl == null) {
           throw Exception("Failed to upload one or both PWD ID images.");
         }
@@ -106,21 +130,44 @@ class UserDataService {
       }
     }
 
-    // 2. CONSTRUCT FINAL DATA PAYLOAD
+    // CONSTRUCT FINAL DATA PAYLOAD with CORRECT keys matching the database
     final Map<String, dynamic> finalProfileData = {
-      'id': user.id, // Supabase user ID is the primary key for the 'user_details' table
-      'is_pwd': isPwd,
-      'pwd_id_number': isPwd ? idNum : null,
-      'pwd_id_front_url': isPwd ? frontImageUrl : null,
-      'pwd_id_back_url': isPwd ? backImageUrl : null,
-      // Ensure all previous profile data is merged
-      ...initialProfileData, 
+      'user_id': user.id,
+      'lastName': initialProfileData['lastName'],
+      'firstName': initialProfileData['firstName'],
+      'middleName': initialProfileData['middleName'],
+      'gender': initialProfileData['gender'],
+      'birthDate': initialProfileData['birthDate'],
+      'birthPlace': initialProfileData['birthPlace'],
+      'houseNum': initialProfileData['houseNum'],
+      'street': initialProfileData['street'],
+      'city': initialProfileData['city'],
+      'province': initialProfileData['province'],
+      'zipCode': initialProfileData['zipCode'],
+      'contactNumber': initialProfileData['contactNumber'],
+      'civilStatus': initialProfileData['civilStatus'],
+      'voterStatus': initialProfileData['voterStatus'],
+      'isPwd': isPwd,
+      'pwdIDNum': isPwd ? idNum : null,
+      'frontImageURL': isPwd ? frontImageUrl : null,
+      'backImageURL': isPwd ? backImageUrl : null,
     };
+
+    // REMOVE THIS AFTER
+    print('Final Data Payload: $finalProfileData');
     
-    // 3. INSERT/UPDATE DATA INTO user_details TABLE
-    await _supabase.from('user_details').upsert(finalProfileData);
-    
-    // 4. UPDATE USER METADATA (marks onboarding as complete)
+    // // UPDATE/INSERT DATA into the user_details table
+    // await _supabase.from('user_details').upsert(finalProfileData);
+    // UPDATE/INSERT DATA into the user_details table
+    final response = await _supabase
+        .from('user_details')
+        .upsert(finalProfileData)
+        .select();
+
+      print('Upsert response: $response');
+
+        
+    // UPDATE USER METADATA (marks onboarding as complete)
     await _supabase.auth.updateUser(
       UserAttributes(
         data: {'onboarding_complete': true},
@@ -139,7 +186,7 @@ class UserDataService {
       final response = await _supabase
           .from('user_details')
           .select()
-          .eq('id', user.id)
+          .eq('user_id', user.id) // Corrected to use 'user_id'
           .single();
 
       return UserDetails.fromMap(response);

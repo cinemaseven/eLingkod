@@ -136,6 +136,13 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   );
 }
 
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'This field is required';
+    }
+    return null;
+  }
+
   // Pick an image (for Signature)
   Future<void> _pickImage(Function(File) onSelected) async {
     final XFile? pickedFile =
@@ -147,6 +154,107 @@ class _BarangayClearanceState extends State<BarangayClearance> {
     }
   }
 
+  Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
+  final picked = await showCustomDatePicker(context);
+  if (picked != null) {
+    onDateSelected(picked);
+    controller.text = DateFormat('MM/dd/yyyy').format(picked);
+  }
+}
+
+// The new function to handle form submission, validation, and navigation
+void _submitBarangayClearance() async {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+   // First, validate the entire form.
+  if (_formKey.currentState!.validate()) {
+    if (signatureImage == null) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text("Please upload your Signature.",
+              style: TextStyle(
+                  color: ElementColors.tertiary,
+                  fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.fontColor2,
+        ),
+      );
+      return;
+    }
+    // If the form is valid, proceed to show the terms and conditions dialog.
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => TermsPopup(
+      onConfirmed: () async {
+          // If the user confirms in the popup, close the popup.
+          Navigator.pop(dialogContext);
+          // Now, we can proceed with the data submission and navigation.
+          try {
+            // 1. Collect all the data from the form.
+            final Map<String, dynamic> formData = {
+              'applicationDate': applicationDate.text,
+              'ownOrRent': ownOrRent,
+              'lengthStay': lengthStay.text,
+              'clearanceNum': clearanceNum.text,
+              'fullName': fullName.text,
+              'gender': gender,
+              'houseNum': houseNum.text,
+              'street': street.text,
+              'city': city.text,
+              'province': province.text,
+              'zipCode': zipCode.text,
+              'birthDate': birthDate.text,
+              'age': age.text,
+              'contactNum': contactNum.text,
+              'birthplace': birthplace.text,
+              'nationality': nationality.text,
+              'civilStatus': _selectedCivilStatus,
+              'email': email.text,
+              'purpose': purpose.text,
+              'signatureImage': signatureImage,
+            };
+
+            // 2. Call your service to handle the data submission (e.g., to a database).
+            // This is a placeholder for your actual submission logic.
+            // await yourBarangayClearanceService.submitRequest(formData);
+
+            // Navigate back to the Home screen with a confirmation flag.
+            Future.microtask(() {
+          Navigator.of(context).pushReplacement(
+            CustomPageRoute(page: const Home(showConfirmation: true)),
+          );
+            });
+
+          } on Exception catch (e) {
+            // Handle and show any errors that occur.
+            scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit request: ${e.toString()}',
+            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
+          ),
+            );
+          }
+            }
+          ),
+            );
+          } else {
+            // If validation fails, show a general message to the user.
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text("Please fill out all required fields.",
+                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ElementColors.fontColor2,
+              ),
+            );
+          }
+        }
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +270,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
@@ -176,12 +284,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            CustomPageRoute(page: const Home()),
-                          );
-                        },
+                        onPressed: () => Navigator.pop(context),
                       ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -195,9 +298,12 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                         ),
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Barangay Clearance button tapped!"),
-                              duration: Duration(seconds: 2),
+                            SnackBar(
+                              content: Text("Barangay Clearance button tapped!",
+                                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+                              duration: const Duration(seconds: 3),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: ElementColors.fontColor2,
                             ),
                           );
                           Future.delayed(const Duration(seconds: 2), () {
@@ -229,15 +335,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
             
                 InkWell(
                 // Use the reusable function here
-                onTap: () async {
-                  final picked = await showCustomDatePicker(context);
-                  if (picked != null) {
-                    setState(() {
-                      _selectedApplicationDate = picked;
-                      birthDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
-                    });
-                  }
-                },
+                onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
                 child: IgnorePointer(
                   child: TxtField(
                     type: TxtFieldType.services,
@@ -245,12 +343,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     hint: "MM/DD/YYYY",
                     controller: applicationDate,
                     suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
+                    validator: _requiredValidator
                   ),
                 ),
                 ),
@@ -278,12 +371,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                   hint: "Days",
                   controller: lengthStay,
                   keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator
                 ),
                 
                 // Clearance Number
@@ -293,12 +381,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                   type: TxtFieldType.services,
                   hint: "Enter Clearance Number",
                   controller: clearanceNum,
-                  validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                  validator: _requiredValidator
                 ),
                             
                 // Full Name
@@ -308,12 +391,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                   type: TxtFieldType.services,
                   hint: "Last, First, Middle",
                   controller: fullName,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
+                  validator: _requiredValidator
                 ),
                             
                 // Gender
@@ -360,12 +438,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     width: media.width * 0.3,
                     labelFontSize: 15,
                     customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                                 
                   TxtField(
@@ -376,12 +449,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     width: media.width * 0.5,
                     labelFontSize: 15,
                     customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                 ],
                 ),
@@ -394,12 +462,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                 controller: city,
                 labelFontSize: 15,
                 customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
-                validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                validator: _requiredValidator
                 ),
                 
                 const SizedBox(height: 10),
@@ -413,12 +476,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     width: media.width * 0.5,
                     labelFontSize: 15,
                     customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                                 
                   TxtField(
@@ -429,12 +487,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     width: media.width * 0.29,
                     labelFontSize: 15,
                     customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                 ],
                 ),
@@ -442,15 +495,8 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                 const SizedBox(height: 20),
                 InkWell(
                 // Use the reusable function here
-                onTap: () async {
-                  final picked = await showCustomDatePicker(context);
-                  if (picked != null) {
-                    setState(() {
-                      _selectedBirthDate = picked;
-                      birthDate.text = DateFormat('MM/dd/yyyy').format(_selectedBirthDate!);
-                    });
-                  }
-                },
+                onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
+
                 child: IgnorePointer(
                   child: TxtField(
                     type: TxtFieldType.services,
@@ -458,12 +504,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     hint: "MM/DD/YYYY",
                     controller: birthDate,
                     suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
+                    validator: _requiredValidator
                   ),
                 ),
                 ),
@@ -479,12 +520,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     controller: age,
                     width: media.width * 0.3,
                     customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                                 
                   // Contact Number
@@ -496,12 +532,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     keyboardType: TextInputType.number,
                     width: media.width * 0.5,
                     customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                 ],
                 ),
@@ -513,12 +544,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     type: TxtFieldType.services,
                     hint: "Place of Birth",
                     controller: birthplace,
-                    validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'This field is required.';
-                        }
-                        return null;
-                      },
+                    validator: _requiredValidator
                   ),
                 
                 // Nationality
@@ -528,12 +554,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     type: TxtFieldType.services,
                     hint: "Nationality",
                     controller: nationality,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
+                    validator: _requiredValidator
                   ),
                 
                 // Civil Status
@@ -548,12 +569,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     hint: "example@gmail.com",
                     controller: email,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
+                    validator: _requiredValidator
                   ),
                             
                 // Clearance Purpose
@@ -563,36 +579,19 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     type: TxtFieldType.services,
                     hint: "Enter Purpose",
                     controller: purpose,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
+                    validator: _requiredValidator
                 ),
                             
                 // Signature (Image)
                 const SizedBox(height: 30),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Applicant Signature over Printed Name",
-                    imageFile: signatureImage,
-                    onTap: () => _pickImage((file) => signatureImage = file),
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: UploadImageBox(
+                  label: "Applicant Signature over Printed Name",
+                  imageFile: signatureImage,
+                  onTap: () => _pickImage((file) => signatureImage = file),
                 ),
-                            
-                // const SizedBox(height: 20),
-                // Container(
-                //   height: media.width < 400 ? 100 : 120, // Responsive height
-                //   width: double.infinity,
-                //   decoration: BoxDecoration(
-                //     border: Border.all(color: Colors.grey.shade400),
-                //     borderRadius: BorderRadius.circular(15),
-                //   ),
-                //   child: Center(
-                //       child: Text("Upload Files", style: labelStyle)),
-                // ),
+              ),
                             
                 // Submit button
                 const SizedBox(height: 30),
@@ -604,24 +603,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                     type: BtnType.secondary,
                     fontSize: isSmallScreen ? 16 : 14,
                     height: 45,
-                  onClick: () {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (dialogContext) => TermsPopup(
-                        onConfirmed: () {
-                          Navigator.pop(dialogContext); // close TermsPopup
-                          // Delay pushReplacement until after pop is finished
-                          Future.microtask(() {
-                            Navigator.pushReplacement(
-                              context,
-                              CustomPageRoute(page: const Home(showConfirmation: true)),
-                            );
-                          });
-                        }
-                      ),
-                    );
-                  }
+                  onClick:  _submitBarangayClearance
                   ),
                   ),
                 ),],),
