@@ -18,6 +18,7 @@ class UserDetails {
   final String? province;
   final String? zipCode;
   final String? contactNumber;
+  //final String? email; //sicne wlang email na table sa db
   final String? civilStatus;
   final String? voterStatus;
   final bool? isPwd;
@@ -39,6 +40,7 @@ class UserDetails {
     this.province,
     this.zipCode,
     this.contactNumber,
+    //this.email,
     this.civilStatus,
     this.voterStatus,
     this.isPwd,
@@ -62,12 +64,60 @@ class UserDetails {
       province: map['province'] as String?,
       zipCode: map['zipCode'] as String?,
       contactNumber: map['contactNumber'] as String?,
+      //email: map['email'] as String?,
       civilStatus: map['civilStatus'] as String?,
       voterStatus: map['voterStatus'] as String?,
       isPwd: map['isPwd'] as bool?,
       pwdIDNum: map['pwdIDNum'] as String?,
       frontImageURL: map['frontImageURL'] as String?,
       backImageURL: map['backImageURL'] as String?,
+    );
+  }
+
+  // new edited values
+  UserDetails copyWith({
+    String? user_id,
+    String? lastName,
+    String? firstName,
+    String? middleName,
+    String? gender,
+    String? birthDate,
+    String? birthPlace,
+    String? houseNum,
+    String? street,
+    String? city,
+    String? province,
+    String? zipCode,
+    String? contactNumber,
+    String? civilStatus,
+    String? voterStatus,
+    bool? isPwd,
+    String? pwdIDNum,
+    String? frontImageURL,
+    String? backImageURL,
+  }) 
+  
+  {
+    return UserDetails(
+      user_id: user_id ?? this.user_id,
+      lastName: lastName ?? this.lastName,
+      firstName: firstName ?? this.firstName,
+      middleName: middleName ?? this.middleName,
+      gender: gender ?? this.gender,
+      birthDate: birthDate ?? this.birthDate,
+      birthPlace: birthPlace ?? this.birthPlace,
+      houseNum: houseNum ?? this.houseNum,
+      street: street ?? this.street,
+      city: city ?? this.city,
+      province: province ?? this.province,
+      zipCode: zipCode ?? this.zipCode,
+      contactNumber: contactNumber ?? this.contactNumber,
+      civilStatus: civilStatus ?? this.civilStatus,
+      voterStatus: voterStatus ?? this.voterStatus,
+      isPwd: isPwd ?? this.isPwd,
+      pwdIDNum: pwdIDNum ?? this.pwdIDNum,
+      frontImageURL: frontImageURL ?? this.frontImageURL,
+      backImageURL: backImageURL ?? this.backImageURL,
     );
   }
 }
@@ -145,6 +195,7 @@ class UserDataService {
       'province': initialProfileData['province'],
       'zipCode': initialProfileData['zipCode'],
       'contactNumber': initialProfileData['contactNumber'],
+      'email': initialProfileData['email'],
       'civilStatus': initialProfileData['civilStatus'],
       'voterStatus': initialProfileData['voterStatus'],
       'isPwd': isPwd,
@@ -173,6 +224,33 @@ class UserDataService {
         data: {'onboarding_complete': true},
       ),
     );
+  }
+
+    /// Updates basic profile fields in user_details
+  Future<void> updateUserDetails(Map<String, dynamic> updatedData) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw const AuthException("User not authenticated");
+
+    // pag-iuupdate ung info
+    final dataToUpdate = {
+      'user_id': user.id, // needed for upsert
+      //'gender': updatedData['gender'],
+      //'birthDate': updatedData['dob'],
+      //'birthPlace': updatedData['pob'],
+      //'contactNumber': updatedData['contact'],
+      'civilStatus': updatedData['civil'],
+      'voterStatus': updatedData['voter'],
+      //'province': updatedData['citizenship'], // depends how you want to map
+      // 'address': updatedData['address'], // optional if your schema splits this
+      //'email': updatedData['email'],     // only if you keep email here
+    };
+
+    final response = await _supabase
+        .from('user_details')
+        .upsert(dataToUpdate)
+        .select();
+
+    print("Update response: $response");
   }
 
   /// Fetches the current user's complete profile data from the 'user_details' table.
