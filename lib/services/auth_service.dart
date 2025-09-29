@@ -234,7 +234,7 @@ class AuthService {
         type: OtpType.sms, // CRUCIAL: Specifies verification type for SMS
       );
     } else {
-      throw const AuthException("Cannot verify OTP without knowing the target (email or phone).");
+      throw const AuthException("Cannot verify OTP without email or phone.");
     }
 
     if (res.user == null) {

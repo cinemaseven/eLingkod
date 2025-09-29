@@ -3,7 +3,7 @@ import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/date_picker.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
-import 'package:elingkod/pages/pwd_info.dart';
+import 'package:elingkod/pages/additional_info.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -30,6 +30,7 @@ class _ProfileInfoState extends State<ProfileInfo> {
   final TextEditingController midName = TextEditingController();
   final TextEditingController birthDate = TextEditingController();
   final TextEditingController birthPlace = TextEditingController();
+  final TextEditingController citizenship = TextEditingController();
   final TextEditingController houseNum = TextEditingController();
   final TextEditingController street = TextEditingController();
   final TextEditingController city = TextEditingController();
@@ -128,12 +129,14 @@ Widget _buildCivilStatusDropdown() {
   void _navigateToPwdInfo() {
     if (_formKey.currentState!.validate()) {
       final profileData = {
+        'email': email.text,
         'lastName': lastName.text,
         'firstName': firstName.text,
         'middleName': midName.text,
         'gender': gender,
         'birthDate': _selectedDate?.toIso8601String().split('T').first,
         'birthPlace': birthPlace.text,
+        'citizenship': citizenship.text,
         'houseNum': houseNum.text,
         'street': street.text,
         'city': city.text,
@@ -145,17 +148,17 @@ Widget _buildCivilStatusDropdown() {
       };
       Navigator.push(
         context,
-        CustomPageRoute(page: PwdInfo(profileData: profileData)),
+        CustomPageRoute(page: AdditionalInfo(profileData: profileData)),
       );
     } else {
       // This is where you would show a snackbar or dialog if the form is invalid
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("All text fields and options must have values.",
-            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            style: TextStyle(fontWeight: FontWeight.bold)),
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
+          backgroundColor: ElementColors.secondary
         ),
       );
     }
@@ -169,6 +172,7 @@ Widget _buildCivilStatusDropdown() {
     midName.dispose();
     birthDate.dispose();
     birthPlace.dispose();
+    citizenship.dispose();
     houseNum.dispose();
     street.dispose();
     city.dispose();
@@ -313,6 +317,15 @@ Widget _buildCivilStatusDropdown() {
                   label: 'Place of Birth:',
                   hint: "Ex: Angeles City, Pampanga",
                   controller: birthPlace,
+                  validator: _requiredValidator,
+                ),
+                // Citizenship
+                const SizedBox(height: 20),
+                TxtField(
+                  type: TxtFieldType.services,
+                  label: 'Citizenship:',
+                  hint: "Ex: Filipino",
+                  controller: citizenship,
                   validator: _requiredValidator,
                 ),
                 // Address

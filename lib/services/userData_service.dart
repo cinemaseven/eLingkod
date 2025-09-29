@@ -6,83 +6,94 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // This should match the columns in your 'user_details' Supabase table.
 class UserDetails {
   final String? user_id;
+  final String? email;
   final String? lastName;
   final String? firstName;
   final String? middleName;
   final String? gender;
   final String? birthDate;
   final String? birthPlace;
+  final String? citizenship;
   final String? houseNum;
   final String? street;
   final String? city;
   final String? province;
   final String? zipCode;
   final String? contactNumber;
-  //final String? email; //sicne wlang email na table sa db
   final String? civilStatus;
   final String? voterStatus;
+  final bool? isSenior;
+  final String? seniorCardImageURL;
   final bool? isPwd;
   final String? pwdIDNum;
-  final String? frontImageURL;
-  final String? backImageURL;
+  final String? frontPWDImageURL;
+  final String? backPWDImageURL;
 
   UserDetails({
     this.user_id,
+    this.email,
     this.lastName,
     this.firstName,
     this.middleName,
     this.gender,
     this.birthDate,
     this.birthPlace,
+    this.citizenship,
     this.houseNum,
     this.street,
     this.city,
     this.province,
     this.zipCode,
     this.contactNumber,
-    //this.email,
     this.civilStatus,
     this.voterStatus,
+    this.isSenior,
+    this.seniorCardImageURL,
     this.isPwd,
     this.pwdIDNum,
-    this.frontImageURL,
-    this.backImageURL,
+    this.frontPWDImageURL,
+    this.backPWDImageURL,
   });
 
   factory UserDetails.fromMap(Map<String, dynamic> map) {
     return UserDetails(
       user_id: map['user_id'] as String?,
+      email: map['email'] as String?,
       lastName: map['lastName'] as String?,
       firstName: map['firstName'] as String?,
       middleName: map['middleName'] as String?,
       gender: map['gender'] as String?,
       birthDate: map['birthDate'] as String?,
       birthPlace: map['birthPlace'] as String?,
+      citizenship: map['citizenship'] as String?,
       houseNum: map['houseNum'] as String?,
       street: map['street'] as String?,
       city: map['city'] as String?,
       province: map['province'] as String?,
       zipCode: map['zipCode'] as String?,
       contactNumber: map['contactNumber'] as String?,
-      //email: map['email'] as String?,
       civilStatus: map['civilStatus'] as String?,
       voterStatus: map['voterStatus'] as String?,
+      isSenior: map['isPwd'] as bool?,
+      seniorCardImageURL: map['seniorCardImageURL'] as String?,
       isPwd: map['isPwd'] as bool?,
       pwdIDNum: map['pwdIDNum'] as String?,
-      frontImageURL: map['frontImageURL'] as String?,
-      backImageURL: map['backImageURL'] as String?,
+      frontPWDImageURL: map['frontPWDImageURL'] as String?,
+      backPWDImageURL: map['backPWDImageURL'] as String?,
     );
   }
 
   // new edited values
   UserDetails copyWith({
     String? user_id,
+    String? email,
     String? lastName,
     String? firstName,
     String? middleName,
     String? gender,
     String? birthDate,
     String? birthPlace,
+    String? citizenship,
     String? houseNum,
     String? street,
     String? city,
@@ -91,21 +102,25 @@ class UserDetails {
     String? contactNumber,
     String? civilStatus,
     String? voterStatus,
+    bool? isSenior,
+    String? seniorCardImageURL,
     bool? isPwd,
     String? pwdIDNum,
-    String? frontImageURL,
-    String? backImageURL,
+    String? frontPWDImageURL,
+    String? backPWDImageURL,
   }) 
   
   {
     return UserDetails(
       user_id: user_id ?? this.user_id,
+      email: email ?? this.email,
       lastName: lastName ?? this.lastName,
       firstName: firstName ?? this.firstName,
       middleName: middleName ?? this.middleName,
       gender: gender ?? this.gender,
       birthDate: birthDate ?? this.birthDate,
       birthPlace: birthPlace ?? this.birthPlace,
+      citizenship: citizenship ?? this.citizenship,
       houseNum: houseNum ?? this.houseNum,
       street: street ?? this.street,
       city: city ?? this.city,
@@ -114,10 +129,12 @@ class UserDetails {
       contactNumber: contactNumber ?? this.contactNumber,
       civilStatus: civilStatus ?? this.civilStatus,
       voterStatus: voterStatus ?? this.voterStatus,
+      isSenior: isSenior ?? this.isSenior,
+      seniorCardImageURL: seniorCardImageURL ?? this.seniorCardImageURL,
       isPwd: isPwd ?? this.isPwd,
       pwdIDNum: pwdIDNum ?? this.pwdIDNum,
-      frontImageURL: frontImageURL ?? this.frontImageURL,
-      backImageURL: backImageURL ?? this.backImageURL,
+      frontPWDImageURL: frontPWDImageURL ?? this.frontPWDImageURL,
+      backPWDImageURL: backPWDImageURL ?? this.backPWDImageURL,
     );
   }
 }
@@ -154,25 +171,40 @@ class UserDataService {
   /// Saves the final profile data (including PWD info) and marks onboarding as complete.
   Future<void> saveCompleteOnboardingProfile({
     required Map<String, dynamic> initialProfileData,
-    required String? yesOrNo,
+    required String? seniorYesOrNo,
+    required File? seniorCardImage,
+    required String? pwdYesOrNo,
     required String? idNum,
-    required File? frontImage,
-    required File? backImage,
+    required File? frontPWDImage,
+    required File? backPWDImage,
   }) async {
     final User? user = _supabase.auth.currentUser;
     if (user == null) {
       throw const AuthException('User not authenticated.');
     }
 
-    String? frontImageUrl;
-    String? backImageUrl;
-    final bool isPwd = yesOrNo == 'Yes';
+    String? seniorCardImageUrl;
+    String? frontPWDImageUrl;
+    String? backPWDImageUrl;
+    final bool isPwd = pwdYesOrNo == 'Yes';
+    final bool isSenior = seniorYesOrNo == 'Yes';
+
+    if (isSenior) {
+      if (seniorCardImage != null) {
+        seniorCardImageUrl = await _uploadFile(seniorCardImage, 'front_id');
+        if (seniorCardImageUrl == null) {
+          throw Exception("Failed to upload senior citizen card image.");
+        }
+      } else {
+        throw Exception("Senior Citizen Card images are required but missing.");
+      }
+    }
 
     if (isPwd) {
-      if (frontImage != null && backImage != null) {
-        frontImageUrl = await _uploadFile(frontImage, 'front_id');
-        backImageUrl = await _uploadFile(backImage, 'back_id');
-        if (frontImageUrl == null || backImageUrl == null) {
+      if (frontPWDImage != null && backPWDImage != null) {
+        frontPWDImageUrl = await _uploadFile(frontPWDImage, 'front_id');
+        backPWDImageUrl = await _uploadFile(backPWDImage, 'back_id');
+        if (frontPWDImageUrl == null || backPWDImageUrl == null) {
           throw Exception("Failed to upload one or both PWD ID images.");
         }
       } else {
@@ -183,29 +215,29 @@ class UserDataService {
     // CONSTRUCT FINAL DATA PAYLOAD with CORRECT keys matching the database
     final Map<String, dynamic> finalProfileData = {
       'user_id': user.id,
+      'email': initialProfileData['email'],
       'lastName': initialProfileData['lastName'],
       'firstName': initialProfileData['firstName'],
       'middleName': initialProfileData['middleName'],
       'gender': initialProfileData['gender'],
       'birthDate': initialProfileData['birthDate'],
       'birthPlace': initialProfileData['birthPlace'],
+      'citizenship': initialProfileData['citizenship'],
       'houseNum': initialProfileData['houseNum'],
       'street': initialProfileData['street'],
       'city': initialProfileData['city'],
       'province': initialProfileData['province'],
       'zipCode': initialProfileData['zipCode'],
       'contactNumber': initialProfileData['contactNumber'],
-      'email': initialProfileData['email'],
       'civilStatus': initialProfileData['civilStatus'],
       'voterStatus': initialProfileData['voterStatus'],
+      'isSenior': isSenior,
+      'seniorCardImageURL': isSenior ? seniorCardImageUrl : null,
       'isPwd': isPwd,
       'pwdIDNum': isPwd ? idNum : null,
-      'frontImageURL': isPwd ? frontImageUrl : null,
-      'backImageURL': isPwd ? backImageUrl : null,
+      'frontPWDImageURL': isPwd ? frontPWDImageUrl : null,
+      'backPWDImageURL': isPwd ? backPWDImageUrl : null,
     };
-
-    // REMOVE THIS AFTER
-    print('Final Data Payload: $finalProfileData');
     
     // // UPDATE/INSERT DATA into the user_details table
     // await _supabase.from('user_details').upsert(finalProfileData);

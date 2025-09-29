@@ -7,13 +7,42 @@ import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/pages/profile.dart';
 import 'package:elingkod/pages/registration.dart';
 import 'package:elingkod/pages/request_status.dart';
+import 'package:elingkod/services/userData_service.dart';
 import 'package:flutter/material.dart';
 
-class Hamburger extends StatelessWidget {
+class Hamburger extends StatefulWidget {
   const Hamburger({super.key});
 
   @override
+  State<Hamburger> createState() => _HamburgerState();
+}
+
+class _HamburgerState extends State<Hamburger> {
+  UserDetails? _userDetails;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDetails();
+  }
+
+  Future<void> _loadUserDetails() async {
+    try {
+      final details = await UserDataService().fetchUserDetails();
+      setState(() {
+        _userDetails = details;
+        _loading = false;
+      });
+    } catch (e) {
+      print("Error loading user details: $e");
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final firstName = _userDetails?.firstName ?? "Guest";
     final media = MediaQuery.of(context).size;
     final bool isWideScreen = media.width > 600;
 
@@ -55,7 +84,7 @@ class Hamburger extends StatelessWidget {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            "Hi, [Name]!",
+                            "Hi, $firstName!",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(

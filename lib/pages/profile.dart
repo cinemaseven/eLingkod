@@ -1,8 +1,9 @@
 import 'dart:io';
+
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/hamburger.dart';
-import 'package:flutter/material.dart';
 import 'package:elingkod/services/userData_service.dart';
+import 'package:flutter/material.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -52,13 +53,24 @@ class _ProfileState extends State<Profile> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profile updated successfully")),
+        SnackBar(
+          content: Text("Profile updated successfully",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.secondary
+        ),
       );
 
       setState(() => _hasChanged = false);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update profile: $e")),
+        SnackBar(content: Text("Failed to update profile: $e",
+          style: TextStyle(fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.secondary
+        ),
       );
     }
   }
@@ -105,7 +117,7 @@ class _ProfileState extends State<Profile> {
                             value: opt,
                             child: Text(
                               opt,
-                              style: TextStyle(fontSize: responsiveFont(14)),
+                              style: TextStyle(fontSize: responsiveFont(12.5)),
                             ),
                           );
                         }).toList(),
@@ -128,7 +140,7 @@ class _ProfileState extends State<Profile> {
                   : Text(
                       value ?? "-",
                       style: TextStyle(
-                        fontSize: responsiveFont(14),
+                        fontSize: responsiveFont(12.5),
                         height: 1.5,
                       ),
                     ),
@@ -207,20 +219,20 @@ class _ProfileState extends State<Profile> {
                       Text(
                         "${_userDetails?.firstName ?? ""} ${_userDetails?.middleName ?? ""} ${_userDetails?.lastName ?? ""}",
                         style: TextStyle(
-                          color: Colors.black87,
+                          color: ElementColors.fontColor1,
                           fontSize: responsiveFont(18),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _userDetails?.contactNumber ??
-                            "username, email, or phone",
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: responsiveFont(13),
-                        ),
-                      ),
+                      // const SizedBox(height: 4),
+                      // Text(
+                      //   _userDetails?.contactNumber ??
+                      //       "username, email, or phone",
+                      //   style: TextStyle(
+                      //     color: Colors.black54,
+                      //     fontSize: responsiveFont(13),
+                      //   ),
+                      // ),
 
                       const SizedBox(height: 25),
 
@@ -230,17 +242,18 @@ class _ProfileState extends State<Profile> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            buildRow("Email", _userDetails?.email),
+                            buildRow("Contact Number", _userDetails?.contactNumber),
                             buildRow("Gender", _userDetails?.gender),
                             buildRow("Date of Birth", _userDetails?.birthDate),
                             buildRow("Place of Birth", _userDetails?.birthPlace),
-                            buildRow("Citizenship", _userDetails?.province),
+                            buildRow("Citizenship", _userDetails?.citizenship),
                             buildRow(
                               "Address",
                               "${_userDetails?.houseNum ?? ""} ${_userDetails?.street ?? ""}, "
                               "${_userDetails?.city ?? ""} ${_userDetails?.province ?? ""}, "
                               "${_userDetails?.zipCode ?? ""}",
                             ),
-                            buildRow("Contact Number", _userDetails?.contactNumber),
                             buildRow(
                               "Civil Status",
                               _userDetails?.civilStatus,
