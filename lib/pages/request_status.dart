@@ -60,10 +60,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
               items: _requests,
               itemLabel: (item) => item["title"],
               itemBuilder: (context, item) => ListTile(
-                leading: Icon(item["icon"], color: Colors.black87),
                 title: Text(item["title"]),
-                subtitle: Text(item["status"],
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ),
               onItemTap: (item) {
                 Navigator.push(
@@ -72,9 +69,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                 );
               },
               hintText: "Can't find what you're looking for?",
-              onSearchChanged: (isSearching) {
-                setState(() => _isSearching = isSearching);
-              },
             ),
           ),
 
