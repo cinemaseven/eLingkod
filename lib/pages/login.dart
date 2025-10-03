@@ -58,10 +58,10 @@ void _login() async {
         // Success: Supabase session is established.
         scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Login successful!',
-            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            style: TextStyle(fontWeight: FontWeight.bold)),
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
+          backgroundColor: ElementColors.secondary
           ),
           
         );
@@ -78,10 +78,10 @@ void _login() async {
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Login Failed: ${e.message}',
-              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontWeight: FontWeight.bold)),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
+            backgroundColor: ElementColors.secondary
           ),
         );
       } catch (e) {
@@ -89,10 +89,10 @@ void _login() async {
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('An unexpected error occurred.',
-              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+              style: TextStyle(fontWeight: FontWeight.bold)),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
+            backgroundColor: ElementColors.secondary
           ),
         );
       } finally {

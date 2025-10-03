@@ -8,6 +8,8 @@ import 'package:elingkod/common_widget/date_picker.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/pages/home.dart';
+import 'package:elingkod/services/submitRequests_service.dart';
+import 'package:elingkod/services/userData_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,10 +24,12 @@ class BusinessClearance extends StatefulWidget {
 
 class _BusinessClearanceState extends State<BusinessClearance> {
   final _formKey = GlobalKey<FormState>();
+  UserDetails? _initialUserDetails;
+  bool _loading = true;
   DateTime? _selectedApplicationDate;
-  String? appType; // Application Type
-  String? ownershipType; // Ownership Type
-  String? locationStatus; // Location Status
+  String? appType;
+  String? ownershipType;
+  String? locationStatus;
   final double menuIconSize = 28;
   final TextStyle labelStyle =
   const TextStyle(fontSize: 16, fontWeight: FontWeight.w400);
@@ -63,21 +67,71 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   final TextEditingController capitalization = TextEditingController();
   final TextEditingController grossSales = TextEditingController();
   final TextEditingController ownerName = TextEditingController();
-  final TextEditingController contactNum = TextEditingController();
+  final TextEditingController contactNumber = TextEditingController();
   final TextEditingController email = TextEditingController();
 
   // final TextEditingController contractExpiryMonth = TextEditingController();
   // final TextEditingController contractExpiryDay = TextEditingController();
   // final TextEditingController contractExpiryYear = TextEditingController();
 
-    String? _requiredValidator(String? value) {
+  // Autofill info
+  @override
+  void initState() {
+    super.initState();
+    // Sets application date to today
+    _selectedApplicationDate = DateTime.now();
+    applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
+
+    // Fetch data
+    _loadAndAutofillUserDetails();
+  }
+
+  Future <void> _loadAndAutofillUserDetails() async {
+    try {
+      final details = await UserDataService().fetchUserDetails();
+      if (!mounted) return;
+
+      _initialUserDetails = details;
+
+      contactNumber.text = details.contactNumber ?? '';
+      email.text = details.email ?? '';
+  } catch (e) {
+      print("Error loading user details for autofill: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+}
+
+  @override
+  void dispose() {
+    applicationDate.dispose();
+    businessName.dispose();
+    houseNum.dispose();
+    bldgUnit.dispose();
+    street.dispose();
+    village.dispose();
+    natureOfBusiness.dispose();
+    totalArea.dispose();
+    capitalization.dispose();
+    grossSales.dispose();
+    ownerName.dispose();
+    contactNumber.dispose();
+    email.dispose();
+    super.dispose();
+  }
+
+  String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
     }
     return null;
   }
 
-  // Pick an image (JPG, PNG)
+  // Pick an image
   Future<void> _pickImage(Function(File) onSelected) async {
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -88,7 +142,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     }
   }
 
-  // Pick a file (PDF, DOCX)
+  // Pick a file
   Future<void> _pickFile(Function(File) onSelected) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -101,139 +155,115 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     }
   }
 
-    void _submitBusinessClearance() {
+  Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
+  final pickedDate = await showCustomDatePicker(context);
+  if (pickedDate != null) {
+    onDateSelected(pickedDate);
+    controller.text = DateFormat('MM/dd/yyyy').format(pickedDate);
+  }
+}
+
+  void _submitBusinessClearance() {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // Validate form fields first
-    if (_formKey.currentState!.validate()) {
-      // Validate files based on ownership type
-      if (ownershipType == 'Partnership' || ownershipType == 'Corporation') {
-        if (secCertFile == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text("Please upload a Valid S.E.C Certificate.",
-                  style: TextStyle(
-                      color: ElementColors.tertiary,
-                      fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.fontColor2,
-            ),
-          );
-          return;
-        }
-      } else if (ownershipType == 'Cooperative') {
-        if (cdaFile == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text("Please upload a Valid Cooperative Development Authority Certificate.",
-                  style: TextStyle(
-                      color: ElementColors.tertiary,
-                      fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.fontColor2,
-            ),
-          );
-          return;
-        }
-      } else {
-        if (dtiCertFile == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text("Please upload a Valid D.T.I Certificate.",
-                  style: TextStyle(
-                      color: ElementColors.tertiary,
-                      fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.fontColor2,
-            ),
-          );
-          return;
-        }
-      }
-
-      // Validate required images
-      if (establishmentImage == null) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("Please upload an Establishment Picture.",
-                style: TextStyle(
-                    color: ElementColors.tertiary,
-                    fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
-          ),
-        );
-        return;
-      }
-      if (ownerImage == null) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("Please upload an Owner Picture.",
-                style: TextStyle(
-                    color: ElementColors.tertiary,
-                    fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
-          ),
-        );
-        return;
-      }
-      if (signatureImage == null) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("Please upload your Signature.",
-                style: TextStyle(
-                    color: ElementColors.tertiary,
-                    fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
-          ),
-        );
-        return;
-      }
-
-      // If all validations pass, proceed to show the popup
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => BusinessClearancePopup(
-          onConfirmed: () {
-            Navigator.pop(dialogContext); // Close popup
-            Future.microtask(() {
-              Navigator.pushReplacement(
-                context,
-                CustomPageRoute(page: const Home(showConfirmation: true)),
-              );
-            });
-          },
-        ),
-      );
-    } else {
-      // If form validation fails, show a general message
+    if (!_formKey.currentState!.validate()) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text("Please fill out all required fields.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
+          content: const Text("Please fill out all required fields.",
+              style: TextStyle(fontWeight: FontWeight.bold)),
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
+          backgroundColor: ElementColors.secondary,
         ),
       );
+        return;
     }
-  }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => BusinessClearancePopup(
+        onConfirmed: () async {
+          try {
+          // 1. Collect all the data
+          final Map<String, dynamic> formData = {
+            'applicationDate': applicationDate.text,
+            'appType': appType,
+            'businessName': businessName.text,
+            'houseNum': houseNum.text,
+            'bldgUnit': bldgUnit.text,
+            'street': street.text,
+            'village': village.text,
+            'natureOfBusiness': natureOfBusiness.text,
+            'ownershipType': ownershipType,
+            'locationStatus': locationStatus,
+            'totalArea': totalArea.text,
+            'capitalization:': capitalization.text,
+            'grossSales': grossSales.text,
+            'ownerName': ownerName.text,
+            'contactNumber': contactNumber.text,
+            'email': email.text,
+            'dtiCertFile': ownershipType == 'Single Proprietor' ? dtiCertFile : null,
+            'secCertFile': ownershipType == 'Partnership' || ownershipType == 'Corporation' ? secCertFile : null,
+            'cdaFile': ownershipType == 'Cooperative' ? cdaFile : null,
+            'barangayClrncImage': appType == 'Renewal Application' ? barangayClrncImage : null,
+            'landTitleFile': landTitleFile,
+            'contractsFile': contractsFile,
+            'establishmentImage': establishmentImage,
+            'ownerImage': ownerImage,
+            'endorsementFile': endorsementFile,
+            'signatureImage': signatureImage,
+          };
+
+            // 2. Show loading indicator while submitting
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+
+          // 3. Submit to Supabase
+          final submitService = SubmitRequestService();
+          await submitService.submitBusinessClearance(formData: formData);
+
+          // 4. Close all dialogs first (loading and terms)
+          Navigator.of(context, rootNavigator: true).pop();
+
+          // 5. Navigate AFTER dialogs are closed
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              CustomPageRoute(page: const Home(showConfirmation: true)),
+            );
+          }
+        } on Exception catch (e) {
+          Navigator.pop(context);
+          Navigator.pop(dialogContext);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to submit request: ${e.toString()}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.secondary,
+            ),
+          );
+        }
+      },
+    )
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
+
+    if (_loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator())
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -244,7 +274,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
@@ -279,10 +309,10 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text("Business Clearance button tapped!",
-                                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+                                style: TextStyle(fontWeight: FontWeight.bold)),
                               duration: const Duration(seconds: 3),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: ElementColors.fontColor2,
+                              backgroundColor: ElementColors.secondary
                             ),
                           );
                           Future.delayed(const Duration(seconds: 2), () {
@@ -316,15 +346,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 // Form Fields
                 InkWell(
                   // Use the reusable function here
-                  onTap: () async {
-                    final picked = await showCustomDatePicker(context);
-                    if (picked != null) {
-                      setState(() {
-                        _selectedApplicationDate = picked;
-                        applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
-                      });
-                    }
-                  },
+                  onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
                   child: IgnorePointer(
                     child: TxtField(
                       type: TxtFieldType.services,
@@ -444,10 +466,14 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 const SizedBox(height: 20),
                 RadioButtons(
                   label: 'Business Ownership Type', 
-                  options: ['Partnership', 'Corporation', 'Cooperative'], 
+                  options: ['Single Proprietor', 'Partnership', 'Corporation', 'Cooperative'], 
                   onChanged: (value) { setState(() { ownershipType = value; });},
-                  showOther: true,
-                  validator:  _requiredValidator
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select ownership type.';
+                    }
+                    return null;
+                  },
                 ),
                             
                 // Business Location Status
@@ -456,8 +482,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                   label: 'Business Location Status', 
                   options: ['Owned', 'Rented', 'Free Lease'], 
                   onChanged: (value) { setState(() { locationStatus = value; });},
-                  showOther: true,
-                  validator:  _requiredValidator
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select status.';
+                    }
+                    return null;
+                  },
                 ),
                             
                 // Other Info
@@ -502,7 +532,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                   label: "Contact Number",
                   type: TxtFieldType.services,
                   hint: "09XXXXXXXXX",
-                  controller: contactNum,
+                  controller: contactNumber,
                   keyboardType: TextInputType.number,
                   validator:  _requiredValidator
                 ),
@@ -535,128 +565,184 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                     style: TextStyle(fontSize: media.height * 0.022, fontWeight: FontWeight.bold),
                   ),
                 ),
-                                      ),
-                            
-                                       // D.T.I Certificate (File)
+              ),
+
+                // Files and Images
                 const SizedBox(height: 10),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadFileBox(
-                    label: "Valid D.T.I Certificate (For Single Proprietors)",
-                    file: dtiCertFile,
-                    onTap: () => _pickFile((file) => dtiCertFile= file),
+                  child: Column(
+                    children: [
+                      // D.T.I Certificate (File)
+                      if (ownershipType == 'Single Proprietor') ... [
+                        UploadFileBox(
+                        label: "Valid D.T.I Certificate",
+                        file: dtiCertFile,
+                        onPickFile: () async {
+                        await _pickFile((file) => dtiCertFile = file);
+                        return dtiCertFile;
+                        },
+                        // validator: (file) {
+                        //   if (file == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                        ),
+                      ],
+                      // S.E.C Certificate (File)
+                      if (ownershipType == 'Partnership' || ownershipType == 'Corporation') ... [
+                        const SizedBox(height: 10),
+                        UploadFileBox(
+                          label: "Valid S.E.C Certificate",
+                          file: secCertFile,
+                          onPickFile: () async {
+                              await _pickFile((file) => secCertFile = file);
+                              return secCertFile;
+                          },
+                          // validator: (file) {
+                          //   if (file == null) {
+                          //     return 'Please upload the required file.';
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                      ],
+                      // C.D.A Certificate (File)
+                      if (ownershipType == 'Cooperative') ... [
+                        const SizedBox(height: 10),
+                        UploadFileBox(
+                          label: "Valid Cooperative Development Authority Certificate",
+                          file: cdaFile,
+                          onPickFile: () async {
+                              await _pickFile((file) => cdaFile = file);
+                              return cdaFile;
+                          },
+                          // validator: (file) {
+                          //   if (file == null) {
+                          //     return 'Please upload the required file.';
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                      ],
+                      // Prev. Barangay Clearance (Image)
+                      if (appType == 'Renewal Application') ... [
+                        const SizedBox(height: 10),
+                        UploadImageBox(
+                          label: "Previous Barangay Clearance",
+                          imageFile: barangayClrncImage, 
+                          onPickFile: () async {
+                            await  _pickImage((file) => barangayClrncImage = file);
+                            return barangayClrncImage;
+                          },
+                          // validator: (imageFile) {
+                          //   if (imageFile == null) {
+                          //     return 'Please upload the required file.';
+                          //   }
+                          //   return null;
+                          // },
+                        ),
+                      ],
+                      // Land Title (File)
+                      const SizedBox(height: 10),
+                      UploadFileBox(
+                        label: "Land Title or Tax Declaration (Must be under the name of land owner / lessor)",
+                        file: landTitleFile, 
+                        onPickFile: () async {
+                          await  _pickFile((file) => landTitleFile = file);
+                          return landTitleFile;
+                        },
+                        // validator: (file) {
+                        //   if (file == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                      // Contracts or Agreements (File)
+                      const SizedBox(height: 10),
+                      UploadFileBox(
+                        label: "Duly Notarized Contracts and/or Agreements",
+                        file: contractsFile, 
+                        onPickFile: () async {
+                          await  _pickFile((file) => contractsFile = file);
+                          return contractsFile;
+                        },
+                        // validator: (file) {
+                        //   if (file == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                      // Establishment (Image)
+                      const SizedBox(height: 10),
+                      UploadImageBox(
+                        label: "4R Format Full-View Establishment Picture",
+                        imageFile: establishmentImage, 
+                        onPickFile: () async {
+                          await  _pickImage((file) => establishmentImage = file);
+                          return establishmentImage;
+                        },
+                        // validator: (imageFile) {
+                        //   if (imageFile == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                      // Owner (Image)
+                      const SizedBox(height: 10),
+                      UploadImageBox(
+                        label: "2x2 Owner Picture",
+                        imageFile: ownerImage, 
+                        onPickFile: () async {
+                          await  _pickImage((file) => ownerImage = file);
+                          return ownerImage;
+                        },
+                        // validator: (imageFile) {
+                        //   if (imageFile == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                      // Contracts or Agreements (File)
+                      const SizedBox(height: 10),
+                      UploadFileBox(
+                        label: "Association Endorsement",
+                        file: endorsementFile,
+                        onPickFile: () async {
+                            await _pickFile((file) => endorsementFile = file);
+                            return endorsementFile;
+                        },
+                        // validator: (file) {
+                        //   if (file == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                      // Signature (Image)
+                      const SizedBox(height: 10),
+                      UploadImageBox(
+                        label: "Applicant Signature over Printed Name",
+                        imageFile: signatureImage, 
+                        onPickFile: () async {
+                          await  _pickImage((file) => signatureImage = file);
+                          return signatureImage;
+                        },
+                        // validator: (imageFile) {
+                        //   if (imageFile == null) {
+                        //     return 'Please upload the required file.';
+                        //   }
+                        //   return null;
+                        // },
+                      ),
+                    ],
                   ),
-                ),
-                            
-                // S.E.C Certificate (File)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadFileBox(
-                    label: "Valid S.E.C Certificate (For Partnership or Corporations)",
-                    file: secCertFile,
-                    onTap: () => _pickFile((file) => secCertFile = file),
-                  ),
-                ),
-                            
-                // C.D.A Certificate (File)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadFileBox(
-                    label: "Valid Cooperative Development Authority Certificate (For Cooperative)",
-                    file: cdaFile,
-                    onTap: () => _pickFile((file) => cdaFile = file),
-                  ),
-                ),
-                            
-                // Prev. Barangay Clearance (Image)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Valid Cooperative Development Authority Certificate (If Renewal)",
-                    imageFile: barangayClrncImage,
-                    onTap: () => _pickImage((file) => barangayClrncImage = file),
-                  ),
-                ),
-                            
-                // Land Title (File)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Land Title or Tax Declaration (Must be under the name of land owner / lessor)",
-                    imageFile: landTitleFile,
-                    onTap: () => _pickFile((file) => landTitleFile = file),
-                  ),
-                ),
-                            
-                // Contracts or Agreements (File)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Duly Notarized Contracts and/or Agreements",
-                    imageFile: contractsFile,
-                    onTap: () => _pickFile((file) => contractsFile = file),
-                  ),
-                ),
-                            
-                 // Establishment (Image)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "4R Format Full-View Establishment Picture",
-                    imageFile: establishmentImage,
-                    onTap: () => _pickImage((file) => establishmentImage = file),
-                  ),
-                ),
-                            
-                // Owner (Image)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "2x2 Owner Picture",
-                    imageFile: ownerImage,
-                    onTap: () => _pickImage((file) => ownerImage = file),
-                  ),
-                ),
-                            
-                // Contracts or Agreements (File)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Association Endorsement",
-                    imageFile: endorsementFile,
-                    onTap: () => _pickFile((file) => endorsementFile = file),
-                  ),
-                ),
-                            
-                // Signature (Image)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Upload Signature",
-                    imageFile: signatureImage,
-                    onTap: () => _pickImage((file) => signatureImage = file),
-                  ),
-                ),
-                            
-                // Signature (Image)
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: UploadImageBox(
-                    label: "Applicant Signature over Printed Name",
-                    imageFile: signatureImage,
-                    onTap: () => _pickImage((file) => signatureImage = file),
-                  ),
-                ),
+                ),              
 
               // Submit button
               const SizedBox(height: 30),
@@ -671,7 +757,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 onClick: _submitBusinessClearance,
                   ),
                 ),
-                                      ),
+                ),
               ],
             ),
           ),

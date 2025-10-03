@@ -20,7 +20,6 @@ class TxtField extends StatefulWidget {
   final EdgeInsets? customPadding;
   final String? Function(String?)? validator; // Add validator here
 
-  // 5. Remove 'const' keyword
   TxtField({
     super.key,
     required this.type,
@@ -86,6 +85,7 @@ class _TxtFieldState extends State<TxtField> {
             vertical: 14,
             horizontal: 15,
           ),
+          suffixIcon: widget.suffixIcon,
           errorStyle: errorTextStyle,
         );
 
@@ -103,6 +103,7 @@ class _TxtFieldState extends State<TxtField> {
             vertical: 10,
             horizontal: 12,
           ),
+          suffixIcon: widget.suffixIcon,
           errorStyle: errorTextStyle,
           // suffixIcon: suffixIcon,
         );
@@ -248,21 +249,38 @@ class RadioButtons extends StatelessWidget {
                                 children: [
                                   Radio<String>(
                                     value: "Other:",
-                                    groupValue: state.value,
+                                    groupValue: state.value?.startsWith("Other:") == true ? "Other:" : state.value,
                                     fillColor: WidgetStateProperty.resolveWith<Color>(
                                       (states) => states.contains(WidgetState.selected)
                                           ? ElementColors.primary
                                           : ElementColors.buttonField,
                                     ),
                                     onChanged: (value) {
-                                      state.didChange(value);
-                                      onChanged(value);
+                                      state.didChange("Other:");
+                                      onChanged("Other:");
                                       setState(() {});
                                     },
                                   ),
                                   const Text("Other:", style: TextStyle(fontSize: 15)),
                                 ],
                               ),
+                              if (state.value?.startsWith("Other:") == true)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 40.0, top: 5.0),
+                                  child: TxtField(
+                                    type: TxtFieldType.services,
+                                    hint: "Please specify",
+                                    controller: TextEditingController(),
+                                    validator: (val) {
+                                      if (state.value?.startsWith("Other:") == true && (val == null || val.isEmpty)) {
+                                        return "Please specify the 'Other' option.";
+                                      }
+                                      return null;
+                                    },
+                                    // 👇 Update the FormField and external onChanged with full "Other: <text>"
+                                    onTap: () {}, // keeps tap behavior if needed
+                                  ),
+                                ),
                             ],
                           ],
                         ),

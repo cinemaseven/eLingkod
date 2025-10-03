@@ -32,36 +32,38 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // Only proceed if the widget is still mounted
     if (!mounted) return;
 
-    // Check for explicit sign out, or if the session is null (initial load, no user)
-    if (session == null || event == AuthChangeEvent.signedOut) {
-      // No session or signed out: go to Registration
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const Registration()),
-      );
-    } else {
-      // Session exists (e.g., SIGNED_IN after link click, or INITIAL_SESSION)
-      final Map<String, dynamic>? userMetadata = session.user.userMetadata;
-      
-      // Default to false if the metadata key doesn't exist yet
-      bool onboardingComplete = userMetadata?['onboarding_complete'] ?? false; 
+    if (event == AuthChangeEvent.signedOut || event == AuthChangeEvent.initialSession) {
+          // Check for explicit sign out, or if the session is null (initial load, no user)
+        if (session == null || event == AuthChangeEvent.signedOut) {
+          // No session or signed out: go to Registration
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const Registration()),
+          );
+        } else {
+          // Session exists (e.g., SIGNED_IN after link click, or INITIAL_SESSION)
+          final Map<String, dynamic>? userMetadata = session.user.userMetadata;
+          
+          // Default to false if the metadata key doesn't exist yet
+          bool onboardingComplete = userMetadata?['onboarding_complete'] ?? false; 
 
-      // Note: We need to pass the email/contact forward if we're going to ProfileInfo, 
-      // but since the metadata might not have the full original contact yet, 
-      // the ProfileInfo screen will need to handle fetching/prompting that info,
-      // or you can rely on the data you stored in the 'profiles' table after the first step.
-      
-      if (onboardingComplete) {
-        // Returning user with completed profile goes to Home
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const Home()),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => ProfileInfo()),
-        );
+          // Note: We need to pass the email/contact forward if we're going to ProfileInfo, 
+          // but since the metadata might not have the full original contact yet, 
+          // the ProfileInfo screen will need to handle fetching/prompting that info,
+          // or you can rely on the data you stored in the 'profiles' table after the first step.
+          
+          if (onboardingComplete) {
+            // Returning user with completed profile goes to Home
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const Home()),
+            );
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => ProfileInfo()),
+            );
+          }
+        }
       }
     }
-  }
   
   @override
   void dispose() {

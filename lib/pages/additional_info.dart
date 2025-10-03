@@ -31,87 +31,22 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
   final ImagePicker _picker = ImagePicker();
   final UserDataService _userDataService = UserDataService();
 
-    // senior citizen card
-  Future<void> _pickSeniorCardImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+   // Pick an image (for Senior Card / PWD Card)
+  Future<void> _pickImage(Function(File) onSelected) async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        _seniorCardImage = File(pickedFile.path);
+        onSelected(File(pickedFile.path));
       });
     }
   }
   
-  // pick Front ID
-  Future<void> _pickFrontPWDImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _frontPWDImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  // pick Back ID
-  Future<void> _pickBackPWDImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _backPWDImage = File(pickedFile.path);
-      });
-    }
-  }
-
   void _createProfile() async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     // 1. Validate the form.
     if (_formKey.currentState!.validate()) {
-      // 2. Add specific validation for PWD fields only if the user answers "Yes".
-      if (seniorYesOrNo == 'Yes') {
-        if (_seniorCardImage == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                "Please upload your senior citizen card",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.secondary
-            ),
-          );
-          return;
-        }
-      }
-
-      if (pwdYesOrNo == 'Yes') {
-        if (_frontPWDImage == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                "Please upload the Front PWD ID.",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.secondary
-            ),
-          );
-          return;
-        }
-        if (_backPWDImage == null) {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                "Please upload the Back PWD ID.",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.secondary
-            ),
-          );
-          return;
-        }
-      }
-
       try {
         // Get ID number, but only if "Yes" is selected. Otherwise, set it to null.
         final String? idNumber = (pwdYesOrNo == 'Yes') ? idNum.text.trim() : null;
@@ -276,52 +211,39 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                     return null;
                   },
                 ),
-                // Upload section
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Please upload a clear, high-resolution photo of your Senior Citizen Card:",
-                      style: TextStyle(fontSize: media.height * 0.017),
+                
+                // Show Senior Card Upload ONLY if Yes
+                if (seniorYesOrNo == 'Yes') ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Please upload a clear, high-resolution photo of your Senior Citizen Card:",
+                        style: TextStyle(fontSize: media.height * 0.017),
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Column(
-                    children: [
-                      FormField<File>(
-                        builder: (FormFieldState<File> state) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              UploadImageBox(
-                                label: "Senior Citizen Card",
-                                imageFile: _seniorCardImage,
-                                onTap: () async {
-                                  await _pickSeniorCardImage();
-                                  state.didChange(_seniorCardImage);
-                                },
-                              ),
-                              if (state.hasError)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                                  child: Text(
-                                    state.errorText ?? '',
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                        validator: (imageFile) {
-                          if (seniorYesOrNo == 'Yes' && imageFile == null) {
-                            return 'Please upload your card.';
-                          }
-                          return null;
-                        },
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    child:
+                    UploadImageBox(
+                      label: "Senior Citizen Card",
+                      imageFile: _seniorCardImage, 
+                      onPickFile: () async {
+                        await  _pickImage((file) => _seniorCardImage = file);
+                        return _seniorCardImage;
+                      },
+                      validator: (imageFile) {
+                        if (seniorYesOrNo == 'Yes' && imageFile == null) {
+                          return 'Please upload your card..';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+
                 // Yes/No PWD question
                 const SizedBox(height: 20),
                 RadioButtons(
@@ -341,101 +263,68 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                   },
                 ),
                 // PWD ID number
-                const SizedBox(height: 20),
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'If Yes, Can you provide your PWD ID number:*',
-                  hint: "RR-PPMM-BBB-NNNNNNN",
-                  controller: idNum,
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (pwdYesOrNo == 'Yes' && (value == null || value.isEmpty)) {
-                      return 'This field is required.';
-                    }
-                    return null;
-                  },
-                ),
-                // Upload section
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "Please upload a clear, high-resolution photo of your PWD ID:",
-                      style: TextStyle(fontSize: media.height * 0.017),
+                if (pwdYesOrNo == 'Yes') ...[
+                  const SizedBox(height: 20),
+                  TxtField(
+                    type: TxtFieldType.services,
+                    label: 'Please provide your PWD ID number:*',
+                    hint: "RR-PPMM-BBB-NNNNNNN",
+                    controller: idNum,
+                    keyboardType: TextInputType.text,
+                    validator: (value) {
+                      if (pwdYesOrNo == 'Yes' && (value == null || value.isEmpty)) {
+                        return 'This field is required.';
+                      }
+                      return null;
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Please upload a clear, high-resolution photo of your PWD ID:",
+                        style: TextStyle(fontSize: media.height * 0.017),
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Column(
-                    children: [
-                      FormField<File>(
-                        builder: (FormFieldState<File> state) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              UploadImageBox(
-                                label: "Front PWD ID *",
-                                imageFile: _frontPWDImage,
-                                onTap: () async {
-                                  await _pickFrontPWDImage();
-                                  state.didChange(_frontPWDImage);
-                                },
-                              ),
-                              if (state.hasError)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                                  child: Text(
-                                    state.errorText ?? '',
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                        validator: (imageFile) {
-                          if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                            return 'Please upload the front image.';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      FormField<File>(
-                        builder: (FormFieldState<File> state) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              UploadImageBox(
-                                label: "Back PWD ID *",
-                                imageFile: _backPWDImage,
-                                onTap: () async {
-                                  await _pickBackPWDImage();
-                                  state.didChange(_backPWDImage);
-                                },
-                              ),
-                              if (state.hasError)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
-                                  child: Text(
-                                    state.errorText ?? '',
-                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                        validator: (imageFile) {
-                          if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                            return 'Please upload the back image.';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    child: Column(
+                      children: [
+                        UploadImageBox(
+                          label: "Front PWD ID ",
+                          imageFile: _backPWDImage, 
+                          onPickFile: () async {
+                            await _pickImage((file) => _frontPWDImage = file);
+                            return _frontPWDImage;
+                          },
+                          validator: (imageFile) {
+                            if (pwdYesOrNo == 'Yes' && imageFile == null) {
+                              return 'Please upload the front image.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        UploadImageBox(
+                          label: "Back PWD ID ",
+                          imageFile: _backPWDImage, 
+                          onPickFile: () async {
+                            await _pickImage((file) => _backPWDImage = file);
+                            return _backPWDImage;
+                          },
+                          validator: (imageFile) {
+                            if (pwdYesOrNo == 'Yes' && imageFile == null) {
+                              return 'Please upload the back image.';
+                            }
+                            return null;
+                          },
+                        )
+                      ],
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 40),
                 SizedBox(
                   width: media.width * 0.5,
@@ -449,9 +338,9 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                 ),
               ],
             ),
-          ),]
+          ),
         ),
-      ),),),
+      ),
     );
   }
 }

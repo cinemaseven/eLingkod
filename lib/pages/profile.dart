@@ -45,6 +45,7 @@ class _ProfileState extends State<Profile> {
       await UserDataService().updateUserDetails({
         'gender': _userDetails?.gender,
         'dob': _userDetails?.birthDate,
+        'age': _userDetails?.age,
         'pob': _userDetails?.birthPlace,
         'civil': _userDetails?.civilStatus,
         'contact': _userDetails?.contactNumber,
@@ -174,29 +175,14 @@ class _ProfileState extends State<Profile> {
                         children: [
                           Container(
                             width: double.infinity,
-                            height: 120,
+                            height: 70,
                             color: ElementColors.primary,
-                          ),
-                          Positioned(
-                            top: 20,
-                            left: 0,
-                            right: 0,
-                            child: Center(
-                              child: Text(
-                                "Profile",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: responsiveFont(20),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
                           ),
                           Positioned(
                             bottom: -50,
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.white,
+                              backgroundColor: ElementColors.fontColor2,
                               child: _profileImage != null
                                   ? ClipOval(
                                       child: Image.file(
@@ -246,6 +232,7 @@ class _ProfileState extends State<Profile> {
                             buildRow("Contact Number", _userDetails?.contactNumber),
                             buildRow("Gender", _userDetails?.gender),
                             buildRow("Date of Birth", _userDetails?.birthDate),
+                            buildRow("Age", _userDetails?.age),
                             buildRow("Place of Birth", _userDetails?.birthPlace),
                             buildRow("Citizenship", _userDetails?.citizenship),
                             buildRow(

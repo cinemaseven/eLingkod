@@ -29,6 +29,7 @@ class _ProfileInfoState extends State<ProfileInfo> {
   final TextEditingController firstName = TextEditingController();
   final TextEditingController midName = TextEditingController();
   final TextEditingController birthDate = TextEditingController();
+  final TextEditingController age = TextEditingController();
   final TextEditingController birthPlace = TextEditingController();
   final TextEditingController citizenship = TextEditingController();
   final TextEditingController houseNum = TextEditingController();
@@ -39,6 +40,33 @@ class _ProfileInfoState extends State<ProfileInfo> {
   final TextEditingController contactNumber = TextEditingController();
   final TextEditingController voterStatus = TextEditingController();
 
+// Function to calculate age
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int calculatedAge = now.year - birthDate.year;
+
+    if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+      calculatedAge--;
+    }
+    return calculatedAge;
+  }
+
+// Date selection
+  Future<void> _selectDate() async {
+    final pickedDate = await showCustomDatePicker(context);
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDate = pickedDate;
+        birthDate.text = DateFormat('MM/dd/yyyy').format(_selectedDate!);
+
+        // Call function to calculate age and update the age controller
+        final calculatedAge = _calculateAge(pickedDate);
+        age.text = calculatedAge.toString();
+      });
+    }
+  }
+
+// Civil status dropdown
 Widget _buildCivilStatusDropdown() {
   final List<String> civilStatusOptions = [
     'Single',
@@ -89,7 +117,6 @@ Widget _buildCivilStatusDropdown() {
                 vertical: 14,
                 horizontal: 15,
               ),
-              // REMOVED: errorStyle: const TextStyle(height: 0),
             ),
             isExpanded: true,
             value: _selectedCivilStatus,
@@ -135,6 +162,7 @@ Widget _buildCivilStatusDropdown() {
         'middleName': midName.text,
         'gender': gender,
         'birthDate': _selectedDate?.toIso8601String().split('T').first,
+        'age': age.text,
         'birthPlace': birthPlace.text,
         'citizenship': citizenship.text,
         'houseNum': houseNum.text,
@@ -171,6 +199,7 @@ Widget _buildCivilStatusDropdown() {
     firstName.dispose();
     midName.dispose();
     birthDate.dispose();
+    age.dispose();
     birthPlace.dispose();
     citizenship.dispose();
     houseNum.dispose();
@@ -271,7 +300,7 @@ Widget _buildCivilStatusDropdown() {
                 // Gender
                 const SizedBox(height: 20),
                 RadioButtons(
-                  label: 'Gender',
+                  label: 'Gender:',
                   options: const ['Male', 'Female'],
                   onChanged: (value) {
                     setState(() {
@@ -290,25 +319,27 @@ Widget _buildCivilStatusDropdown() {
                 const SizedBox(height: 10),
                 InkWell(
                   // Use the reusable function here
-                  onTap: () async {
-                    final picked = await showCustomDatePicker(context);
-                    if (picked != null) {
-                      setState(() {
-                        _selectedDate = picked;
-                        birthDate.text = DateFormat('MM/dd/yyyy').format(_selectedDate!);
-                      });
-                    }
-                  },
+                  onTap: _selectDate,
                   child: IgnorePointer(
                     child: TxtField(
                       type: TxtFieldType.services,
-                      label: 'Date of Birth',
+                      label: 'Date of Birth:',
                       hint: "MM/DD/YYYY",
                       controller: birthDate,
                       suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
                       validator: _requiredValidator,
                     ),
                   ),
+                ),
+                // Age
+                const SizedBox(height: 20),
+                TxtField(
+                  type: TxtFieldType.services,
+                  label: 'Age:',
+                  hint: 'Ex: 21',
+                  controller: age,
+                  keyboardType: TextInputType.number,
+                  validator: _requiredValidator,
                 ),
                 // Place of birth
                 const SizedBox(height: 20),
@@ -375,7 +406,7 @@ Widget _buildCivilStatusDropdown() {
                 TxtField(
                   type: TxtFieldType.services,
                   label: 'City:',
-                  hint: "Ex: ",
+                  hint: "Ex: Santa Rita",
                   controller: city,
                   labelFontSize: 15,
                   customPadding: const EdgeInsets.fromLTRB(40, 5, 30, 0),

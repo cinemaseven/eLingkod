@@ -8,6 +8,8 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/pages/home.dart';
+import 'package:elingkod/services/submitRequests_service.dart';
+import 'package:elingkod/services/userData_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -21,28 +23,11 @@ class BarangayID extends StatefulWidget {
 
 class _BarangayIDState extends State<BarangayID> {
   final _formKey = GlobalKey<FormState>();
+  UserDetails? _initialUserDetails;
+  bool _loading = true;
   DateTime? _selectedApplicationDate;
   DateTime? _selectedBirthDate;
-
-  // Controllers
-  final TextEditingController applicationDate = TextEditingController();
-
-  final TextEditingController fullName = TextEditingController();
-  final TextEditingController birthDate = TextEditingController();
-  final TextEditingController age = TextEditingController();
-  final TextEditingController contactNum = TextEditingController();
-  final TextEditingController email = TextEditingController();
-
-  final TextEditingController houseNum = TextEditingController();
-  final TextEditingController street = TextEditingController();
-  final TextEditingController city = TextEditingController();
-  final TextEditingController province = TextEditingController();
-  final TextEditingController zipCode = TextEditingController();
-
-  // Gender
   String? gender;
-
-  // ID Purpose
   List<String> chosenPurposes = [];
 
   final double menuIconSize = 28;
@@ -55,6 +40,87 @@ class _BarangayIDState extends State<BarangayID> {
 
   final ImagePicker _picker = ImagePicker();
 
+  // Controllers
+  final TextEditingController applicationDate = TextEditingController();
+
+  final TextEditingController fullName = TextEditingController();
+  final TextEditingController birthDate = TextEditingController();
+  final TextEditingController age = TextEditingController();
+  final TextEditingController contactNumber = TextEditingController();
+  final TextEditingController email = TextEditingController();
+
+  final TextEditingController houseNum = TextEditingController();
+  final TextEditingController street = TextEditingController();
+  final TextEditingController city = TextEditingController();
+  final TextEditingController province = TextEditingController();
+  final TextEditingController zipCode = TextEditingController();
+
+  // Autofill info
+  @override
+  void initState() {
+    super.initState();
+    // Sets application date to today
+    _selectedApplicationDate = DateTime.now();
+    applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
+
+    // Fetch data
+    _loadAndAutofillUserDetails();
+  }
+
+  // Load and initialize controllers
+  Future<void> _loadAndAutofillUserDetails() async {
+    try {
+      final details = await UserDataService().fetchUserDetails();
+      if (!mounted) return;
+
+      _initialUserDetails = details;
+
+      final joinNames = [details.firstName, details.middleName, details.lastName].where((n) => n != null && n.isNotEmpty);
+
+      this.fullName.text = joinNames.join(' ');
+
+      contactNumber.text = details.contactNumber ?? '';
+      email.text = details.email ?? '';
+      gender = details.gender;
+      age.text = details.age ?? '';
+
+      if (details.birthDate != null) {
+        birthDate.text = details.birthDate!;
+      }
+
+      houseNum.text = details.houseNum ?? '';
+      street.text = details.street ?? '';
+      city.text = details.city ?? '';
+      province.text = details.province ?? '';
+      zipCode.text = details.zipCode ?? '';
+    } catch (e) {
+      print("Error loading user details for autofill: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    applicationDate.dispose();
+    fullName.dispose();
+    birthDate.dispose();
+    age.dispose();
+    contactNumber.dispose();
+    email.dispose();
+    houseNum.dispose();
+    street.dispose();
+    city.dispose();
+    province.dispose();
+    zipCode.dispose();
+    super.dispose();
+  }
+
+  // Fields validator
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -72,89 +138,108 @@ class _BarangayIDState extends State<BarangayID> {
     }
   }
 
-  void _submitBarangayID() {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    if (_formKey.currentState!.validate()) {
-      // Check if the image files are not null
-    if (validIdImage == null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text("Please upload a Valid ID.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
+  Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
+  final pickedDate = await showCustomDatePicker(context);
+  if (pickedDate != null) {
+    onDateSelected(pickedDate);
+    controller.text = DateFormat('MM/dd/yyyy').format(pickedDate);
+  }
+}
+
+// Form submission
+void _submitBarangayID() async {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+  if (!_formKey.currentState!.validate()) {
+    // Validate form
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: const Text("Please fill out all required fields.",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.secondary,
+      ),
+    );
       return;
-    }
-    
-    if (residencyImage == null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text("Please upload a Proof of Residency.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
-      return;
-    }
-    
-    if (signatureImage == null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text("Please upload your Signature.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
-      return;
-    }
-      
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => TermsPopup(
-          onConfirmed: () {
-            Navigator.pop(dialogContext); // close TermsPopup
-            Future.microtask(() {
-              Navigator.pushReplacement(
-                context,
-                CustomPageRoute(page: const Home(showConfirmation: true)),
-              );
-            });
-          },
-        ),
-      );
-    } else {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text("Please fill out all required fields.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
-    }
   }
 
+  // Show terms and agreement
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => TermsPopup(
+      onConfirmed: () async {
+        try {
+          // 1. Collect all the data
+          final Map<String, dynamic> formData = {
+            'applicationDate': applicationDate.text,
+            'fullName': fullName.text,
+            'gender': gender, 
+            'birthDate': birthDate.text,
+            'age': age.text,
+            'contactNumber': contactNumber.text,
+            'email': email.text,
+            'houseNum': houseNum.text,
+            'street': street.text,
+            'city': city.text,
+            'province': province.text,
+            'zipCode': zipCode.text,
+            'purpose': chosenPurposes.isEmpty ? null : chosenPurposes.join(', '), 
+            'validIdImage': validIdImage, 
+            'residencyImage': residencyImage, 
+            'signatureImage': signatureImage, 
+          };
+
+          // 2. Show loading indicator while submitting
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+
+          // 3. Submit to Supabase
+          final submitService = SubmitRequestService();
+          await submitService.submitBarangayID(formData: formData);
+
+          // 4. Close all dialogs first (loading and terms)
+          Navigator.of(context, rootNavigator: true).pop();
+
+            // 5. Navigate AFTER dialogs are closed
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              CustomPageRoute(page: const Home(showConfirmation: true)),
+            );
+          }
+        } on Exception catch (e) {
+          Navigator.pop(context);
+          Navigator.pop(dialogContext);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to submit request: ${e.toString()}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.secondary,
+            ),
+          );
+        }
+      },
+    ),
+  );
+}
+  
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
+
+    if (_loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator())
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -200,10 +285,10 @@ class _BarangayIDState extends State<BarangayID> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text("Barangay ID button tapped!",
-                                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+                                style: TextStyle(fontWeight: FontWeight.bold)),
                               duration: const Duration(seconds: 3),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: ElementColors.fontColor2,
+                              backgroundColor: ElementColors.secondary
                             ),
                           );
                           Future.delayed(const Duration(seconds: 2), () {
@@ -236,15 +321,7 @@ class _BarangayIDState extends State<BarangayID> {
                 // Form Fields
                 InkWell(
                   // Use the reusable function here
-                  onTap: () async {
-                    final picked = await showCustomDatePicker(context);
-                    if (picked != null) {
-                      setState(() {
-                        _selectedApplicationDate = picked;
-                        applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
-                      });
-                    }
-                  },
+                  onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
                   child: IgnorePointer(
                     child: TxtField(
                       type: TxtFieldType.services,
@@ -274,7 +351,7 @@ class _BarangayIDState extends State<BarangayID> {
                 TxtField(
                   label: "Full Name",
                   type: TxtFieldType.services,
-                  hint: "Last, First, Middle",
+                  hint: "First Name Middle Name Last Name",
                   controller: fullName,
                   validator: _requiredValidator
                 ),
@@ -282,15 +359,7 @@ class _BarangayIDState extends State<BarangayID> {
                 const SizedBox(height: 20),
                 InkWell(
                   // Use the reusable function here
-                  onTap: () async {
-                    final picked = await showCustomDatePicker(context);
-                    if (picked != null) {
-                      setState(() {
-                        _selectedBirthDate = picked;
-                        birthDate.text = DateFormat('MM/dd/yyyy').format(_selectedBirthDate!);
-                      });
-                    }
-                  },
+                  onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
                   child: IgnorePointer(
                     child: TxtField(
                       type: TxtFieldType.services,
@@ -308,6 +377,7 @@ class _BarangayIDState extends State<BarangayID> {
               RadioButtons(
                 label: 'Gender', 
                 options: ['Male', 'Female'], 
+                initialValue: gender,
                 onChanged: (value) { setState(() { gender = value; });},
                 inline: true,
                 validator: (value) {
@@ -337,7 +407,7 @@ class _BarangayIDState extends State<BarangayID> {
                   type: TxtFieldType.services,
                   label: 'Contact Number:',
                   hint: "Ex: 09xx xxx xxxx",
-                  controller: contactNum,
+                  controller: contactNumber,
                   keyboardType: TextInputType.number,
                   width: media.width * 0.5,
                   customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
@@ -482,41 +552,59 @@ class _BarangayIDState extends State<BarangayID> {
                   ),
                 ),
               ),
-                        
-              // Valid ID (Image)
+              // Valid ID
               const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: UploadImageBox(
-                  label: "Upload Valid ID",
-                  imageFile: validIdImage,
-                  onTap: () => _pickImage((file) => validIdImage = file),
+                child: Column(
+                  children: [
+                    UploadImageBox(
+                      label: "Capture Valid ID",
+                      imageFile: validIdImage, onPickFile: () async {
+                        await _pickImage((file) => validIdImage = file);
+                        return validIdImage;
+                      },
+                      // validator: (imageFile) {
+                      //   if (imageFile == null) {
+                      //     return 'Please upload a valid ID.';
+                      //   }
+                      //   return null;
+                      // },
+                    ),
+                    // Proof of Residency
+                    const SizedBox(height: 10),
+                    UploadImageBox(
+                      label: "Upload Proof of Residency",
+                      imageFile: residencyImage, onPickFile: () async {
+                        await _pickImage((file) => residencyImage = file);
+                        return residencyImage;
+                      },
+                      // validator: (imageFile) {
+                      //   if (imageFile == null) {
+                      //     return 'Please upload your proof of residency.';
+                      //   }
+                      //   return null;
+                      // },
+                    ),
+                    // Signature
+                    const SizedBox(height: 10),
+                    UploadImageBox(
+                      label: "Applicant Signature over Printed Name",
+                      imageFile: signatureImage, onPickFile: () async {
+                        await _pickImage((file) => signatureImage = file);
+                        return signatureImage;
+                      },
+                      // validator: (imageFile) {
+                      //   if (imageFile == null) {
+                      //     return 'Please upload your signature over printed name.';
+                      //   }
+                      //   return null;
+                      // },
+                    ),
+                  ],
                 ),
               ),
-              
-              // Proof of Residency (Image)
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: UploadImageBox(
-                  label: "Upload Proof of Residency",
-                  imageFile: residencyImage,
-                  onTap: () => _pickImage((file) => residencyImage = file),
-                ),
-              ),
-              
-              // Signature (Image)
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: UploadImageBox(
-                  label: "Applicant Signature over Printed Name",
-                  imageFile: signatureImage,
-                  onTap: () => _pickImage((file) => signatureImage = file),
-                ),
-              ),
-              
-                // Submit button
+              // Submit button
               const SizedBox(height: 30),
               Center(
                 child: SizedBox(

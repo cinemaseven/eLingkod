@@ -8,6 +8,8 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/pages/home.dart';
+import 'package:elingkod/services/submitRequests_service.dart';
+import 'package:elingkod/services/userData_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +23,9 @@ class BarangayClearance extends StatefulWidget {
 
 class _BarangayClearanceState extends State<BarangayClearance> {
   final _formKey = GlobalKey<FormState>();
-  String? ownOrRent;
+  UserDetails? _initialUserDetails;
+  bool _loading = true;
+  String? residencyType;
   String? gender;
   DateTime? _selectedApplicationDate;
   DateTime? _selectedBirthDate;
@@ -49,8 +53,8 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   final TextEditingController birthDate = TextEditingController();
 
   final TextEditingController age = TextEditingController();
-  final TextEditingController contactNum = TextEditingController();
-  final TextEditingController birthplace = TextEditingController();
+  final TextEditingController contactNumber = TextEditingController();
+  final TextEditingController birthPlace = TextEditingController();
   final TextEditingController nationality = TextEditingController();
   final TextEditingController civilStatus = TextEditingController();
   final TextEditingController email = TextEditingController();
@@ -136,6 +140,78 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   );
 }
 
+  // Autofill info
+  @override
+  void initState() {
+    super.initState();
+    // Sets application date to today
+    _selectedApplicationDate = DateTime.now();
+    applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
+
+    // Fetch data
+    _loadAndAutofillUserDetails();
+  }
+
+  Future<void> _loadAndAutofillUserDetails() async {
+    try {
+      final details = await UserDataService().fetchUserDetails();
+      if (!mounted) return;
+
+      _initialUserDetails = details;
+
+      final joinNames = [details.firstName, details.middleName, details.lastName].where((n) => n != null && n.isNotEmpty);
+
+      this.fullName.text = joinNames.join(' ');
+
+      gender = details.gender;
+      houseNum.text = details.houseNum ?? '';
+      street.text = details.street ?? '';
+      city.text = details.city ?? '';
+      province.text = details.province ?? '';
+      zipCode.text = details.zipCode ?? '';
+
+      if (details.birthDate != null) {
+        birthDate.text = details.birthDate!;
+      }
+
+      age.text = details.age ?? '';
+      contactNumber.text = details.contactNumber ?? '';
+      birthPlace.text = details.birthPlace ?? '';
+      email.text = details.email ?? '';
+
+      _selectedCivilStatus = details.civilStatus;
+    } catch (e) {
+      print("Error loading user details for autofill: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    lengthStay.dispose();
+    clearanceNum.dispose();
+    fullName.dispose();
+    houseNum.dispose();
+    street.dispose();
+    city.dispose();
+    province.dispose();
+    zipCode.dispose();
+    birthDate.dispose();
+    age.dispose();
+    contactNumber.dispose();
+    birthPlace.dispose();
+    nationality.dispose();
+    civilStatus.dispose();
+    email.dispose();
+    purpose.dispose();
+    super.dispose();
+  }
+
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -155,111 +231,111 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   }
 
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
-  final picked = await showCustomDatePicker(context);
-  if (picked != null) {
-    onDateSelected(picked);
-    controller.text = DateFormat('MM/dd/yyyy').format(picked);
+  final pickedDate = await showCustomDatePicker(context);
+  if (pickedDate != null) {
+    onDateSelected(pickedDate);
+    controller.text = DateFormat('MM/dd/yyyy').format(pickedDate);
   }
 }
 
-// The new function to handle form submission, validation, and navigation
+// Form submission
 void _submitBarangayClearance() async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-   // First, validate the entire form.
-  if (_formKey.currentState!.validate()) {
-    if (signatureImage == null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text("Please upload your Signature.",
-              style: TextStyle(
-                  color: ElementColors.tertiary,
-                  fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
+  if (!_formKey.currentState!.validate()) {
+    // Validate form
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: const Text("Please fill out all required fields.",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.secondary,
+      ),
+    );
       return;
-    }
-    // If the form is valid, proceed to show the terms and conditions dialog.
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => TermsPopup(
+  }
+    
+  // Show terms and agreement
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => TermsPopup(
       onConfirmed: () async {
-          // If the user confirms in the popup, close the popup.
-          Navigator.pop(dialogContext);
-          // Now, we can proceed with the data submission and navigation.
-          try {
-            // 1. Collect all the data from the form.
-            final Map<String, dynamic> formData = {
-              'applicationDate': applicationDate.text,
-              'ownOrRent': ownOrRent,
-              'lengthStay': lengthStay.text,
-              'clearanceNum': clearanceNum.text,
-              'fullName': fullName.text,
-              'gender': gender,
-              'houseNum': houseNum.text,
-              'street': street.text,
-              'city': city.text,
-              'province': province.text,
-              'zipCode': zipCode.text,
-              'birthDate': birthDate.text,
-              'age': age.text,
-              'contactNum': contactNum.text,
-              'birthplace': birthplace.text,
-              'nationality': nationality.text,
-              'civilStatus': _selectedCivilStatus,
-              'email': email.text,
-              'purpose': purpose.text,
-              'signatureImage': signatureImage,
-            };
-
-            // 2. Call your service to handle the data submission (e.g., to a database).
-            // This is a placeholder for your actual submission logic.
-            // await yourBarangayClearanceService.submitRequest(formData);
-
-            // Navigate back to the Home screen with a confirmation flag.
-            Future.microtask(() {
-          Navigator.of(context).pushReplacement(
-            CustomPageRoute(page: const Home(showConfirmation: true)),
+        try {
+          // 1. Collect all the data
+          final Map<String, dynamic> formData = {
+            'applicationDate': applicationDate.text,
+            'residencyType': residencyType,
+            'lengthStay': residencyType == 'Rent' ? lengthStay.text : null,
+            'clearanceNum': clearanceNum.text,
+            'fullName': fullName.text,
+            'gender': gender,
+            'houseNum': houseNum.text,
+            'street': street.text,
+            'city': city.text,
+            'province': province.text,
+            'zipCode': zipCode.text,
+            'birthDate': birthDate.text,
+            'age': age.text,
+            'contactNumber': contactNumber.text,
+            'birthPlace': birthPlace.text,
+            'nationality': nationality.text,
+            'civilStatus': _selectedCivilStatus,
+            'email': email.text,
+            'purpose': purpose.text,
+            'signatureImage': signatureImage,
+          };
+          
+          // 2. Show loading indicator while submitting
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
           );
-            });
 
-          } on Exception catch (e) {
-            // Handle and show any errors that occur.
-            scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit request: ${e.toString()}',
-            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
-          ),
+          // 3. Submit to Supabase
+          final submitService = SubmitRequestService();
+          await submitService.submitBarangayClearance(formData: formData);
+
+          // 4. Close all dialogs first (loading and terms)
+          Navigator.of(context, rootNavigator: true).pop();
+
+          // 5. Navigate AFTER dialogs are closed
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              CustomPageRoute(page: const Home(showConfirmation: true)),
             );
           }
-            }
-          ),
-            );
-          } else {
-            // If validation fails, show a general message to the user.
-            scaffoldMessenger.showSnackBar(
-              SnackBar(
-                content: Text("Please fill out all required fields.",
-                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
-                duration: const Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: ElementColors.fontColor2,
-              ),
-            );
-          }
+        } on Exception catch (e) {
+          Navigator.pop(context);
+          Navigator.pop(dialogContext);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to submit request: ${e.toString()}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.secondary,
+            ),
+          );
         }
+      },
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
+
+    if (_loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator())
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -284,7 +360,7 @@ void _submitBarangayClearance() async {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.of(context).pushReplacement(CustomPageRoute(page: const Home())),
                       ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -300,10 +376,10 @@ void _submitBarangayClearance() async {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text("Barangay Clearance button tapped!",
-                                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+                                style: TextStyle(fontWeight: FontWeight.bold)),
                               duration: const Duration(seconds: 3),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: ElementColors.fontColor2,
+                              backgroundColor: ElementColors.secondary
                             ),
                           );
                           Future.delayed(const Duration(seconds: 2), () {
@@ -348,12 +424,12 @@ void _submitBarangayClearance() async {
                 ),
                 ),
                             
-                // Own or Rent
+                // Residency Type
                 const SizedBox(height: 20),
                 RadioButtons(
-                  label: 'Own or Rent', 
+                  label: 'Residency Type', 
                   options: ['Own', 'Rent'], 
-                  onChanged: (value) { setState(() { ownOrRent = value; });},
+                  onChanged: (value) { setState(() { residencyType = value; });},
                   inline: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -364,15 +440,24 @@ void _submitBarangayClearance() async {
                 ),
                             
                 // Length of Stay
-                const SizedBox(height: 10),
-                TxtField(
-                  label: "Length of Stay",
-                  type: TxtFieldType.services,
-                  hint: "Days",
-                  controller: lengthStay,
-                  keyboardType: TextInputType.number,
-                  validator: _requiredValidator
-                ),
+                if (residencyType == 'Rent') ...[
+                  const SizedBox(height: 10),
+                  TxtField(
+                    label: "Length of Stay",
+                    type: TxtFieldType.services,
+                    hint: "Days",
+                    controller: lengthStay,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (residencyType == 'Rent') {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter length of stay.';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ],
                 
                 // Clearance Number
                 const SizedBox(height: 20),
@@ -399,6 +484,7 @@ void _submitBarangayClearance() async {
                 RadioButtons(
                   label: 'Gender', 
                   options: ['Male', 'Female'], 
+                  initialValue: gender,
                   onChanged: (value) { setState(() { gender = value; });},
                   inline: true,
                   validator: (value) {
@@ -496,7 +582,6 @@ void _submitBarangayClearance() async {
                 InkWell(
                 // Use the reusable function here
                 onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
-
                 child: IgnorePointer(
                   child: TxtField(
                     type: TxtFieldType.services,
@@ -528,7 +613,7 @@ void _submitBarangayClearance() async {
                     type: TxtFieldType.services,
                     label: 'Contact Number:',
                     hint: "Ex: 09xx xxx xxxx",
-                    controller: contactNum,
+                    controller: contactNumber,
                     keyboardType: TextInputType.number,
                     width: media.width * 0.5,
                     customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
@@ -543,7 +628,7 @@ void _submitBarangayClearance() async {
                   label: "Place of Birth",
                     type: TxtFieldType.services,
                     hint: "Place of Birth",
-                    controller: birthplace,
+                    controller: birthPlace,
                     validator: _requiredValidator
                   ),
                 
@@ -584,15 +669,24 @@ void _submitBarangayClearance() async {
                             
                 // Signature (Image)
                 const SizedBox(height: 30),
-                Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: UploadImageBox(
-                  label: "Applicant Signature over Printed Name",
-                  imageFile: signatureImage,
-                  onTap: () => _pickImage((file) => signatureImage = file),
-                ),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: UploadImageBox(
+                    label: "Applicant Signature over Printed Name",
+                    imageFile: signatureImage, 
+                    onPickFile: () async {
+                      await _pickImage((file) => signatureImage = file);
+                      return signatureImage;
+                    },
+                    // validator: (imageFile) {
+                      //   if (imageFile == null) {
+                      //     return 'Please upload your signature over printed name.';
+                      //   }
+                      //   return null;
+                      // },
+                  ),
               ),
-                            
+
                 // Submit button
                 const SizedBox(height: 30),
                 Center(
@@ -607,9 +701,7 @@ void _submitBarangayClearance() async {
                   ),
                   ),
                 ),],),
-          )
-        ),
-      ),
-    );
+          )))
+        );
   }
 }

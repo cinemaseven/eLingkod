@@ -12,6 +12,7 @@ class UserDetails {
   final String? middleName;
   final String? gender;
   final String? birthDate;
+  final String? age;
   final String? birthPlace;
   final String? citizenship;
   final String? houseNum;
@@ -37,6 +38,7 @@ class UserDetails {
     this.middleName,
     this.gender,
     this.birthDate,
+    this.age,
     this.birthPlace,
     this.citizenship,
     this.houseNum,
@@ -64,6 +66,7 @@ class UserDetails {
       middleName: map['middleName'] as String?,
       gender: map['gender'] as String?,
       birthDate: map['birthDate'] as String?,
+      age: map['age'] as String?,
       birthPlace: map['birthPlace'] as String?,
       citizenship: map['citizenship'] as String?,
       houseNum: map['houseNum'] as String?,
@@ -74,7 +77,7 @@ class UserDetails {
       contactNumber: map['contactNumber'] as String?,
       civilStatus: map['civilStatus'] as String?,
       voterStatus: map['voterStatus'] as String?,
-      isSenior: map['isPwd'] as bool?,
+      isSenior: map['isSenior'] as bool?,
       seniorCardImageURL: map['seniorCardImageURL'] as String?,
       isPwd: map['isPwd'] as bool?,
       pwdIDNum: map['pwdIDNum'] as String?,
@@ -92,6 +95,7 @@ class UserDetails {
     String? middleName,
     String? gender,
     String? birthDate,
+    String? age,
     String? birthPlace,
     String? citizenship,
     String? houseNum,
@@ -119,6 +123,7 @@ class UserDetails {
       middleName: middleName ?? this.middleName,
       gender: gender ?? this.gender,
       birthDate: birthDate ?? this.birthDate,
+      age: age ?? this.age,
       birthPlace: birthPlace ?? this.birthPlace,
       citizenship: citizenship ?? this.citizenship,
       houseNum: houseNum ?? this.houseNum,
@@ -143,22 +148,22 @@ class UserDataService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Utility function to upload file to Supabase Storage
-  Future<String?> _uploadFile(File file, String folderName) async {
+  Future<String?> _uploadFile(File file, String folderName, String bucketName) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
     try {
       final fileExtension = file.path.split('.').last;
       final fileName = '${folderName}_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
-      final storagePath = '${user.id}/$fileName';
+      final storagePath = '$folderName/${user.id}/$fileName';
 
-      await _supabase.storage.from('id_images').upload(
+      await _supabase.storage.from(bucketName).upload(
         storagePath,
         file,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
       );
 
-      final fileUrl = _supabase.storage.from('id_images').getPublicUrl(storagePath);
+      final fileUrl = _supabase.storage.from(bucketName).getPublicUrl(storagePath);
       return fileUrl;
 
     } on StorageException catch (e) {
@@ -191,7 +196,7 @@ class UserDataService {
 
     if (isSenior) {
       if (seniorCardImage != null) {
-        seniorCardImageUrl = await _uploadFile(seniorCardImage, 'front_id');
+        seniorCardImageUrl = await _uploadFile(seniorCardImage, 'seniorCardImage', 'senior-pwd-images');
         if (seniorCardImageUrl == null) {
           throw Exception("Failed to upload senior citizen card image.");
         }
@@ -202,8 +207,8 @@ class UserDataService {
 
     if (isPwd) {
       if (frontPWDImage != null && backPWDImage != null) {
-        frontPWDImageUrl = await _uploadFile(frontPWDImage, 'front_id');
-        backPWDImageUrl = await _uploadFile(backPWDImage, 'back_id');
+        frontPWDImageUrl = await _uploadFile(frontPWDImage, 'frontPWDImage','senior-pwd-images');
+        backPWDImageUrl = await _uploadFile(backPWDImage, 'backPWDImage', 'senior-pwd-images');
         if (frontPWDImageUrl == null || backPWDImageUrl == null) {
           throw Exception("Failed to upload one or both PWD ID images.");
         }
@@ -221,6 +226,7 @@ class UserDataService {
       'middleName': initialProfileData['middleName'],
       'gender': initialProfileData['gender'],
       'birthDate': initialProfileData['birthDate'],
+      'age': initialProfileData['age'],
       'birthPlace': initialProfileData['birthPlace'],
       'citizenship': initialProfileData['citizenship'],
       'houseNum': initialProfileData['houseNum'],
@@ -239,8 +245,6 @@ class UserDataService {
       'backPWDImageURL': isPwd ? backPWDImageUrl : null,
     };
     
-    // // UPDATE/INSERT DATA into the user_details table
-    // await _supabase.from('user_details').upsert(finalProfileData);
     // UPDATE/INSERT DATA into the user_details table
     final response = await _supabase
         .from('user_details')
@@ -296,7 +300,7 @@ class UserDataService {
       final response = await _supabase
           .from('user_details')
           .select()
-          .eq('user_id', user.id) // Corrected to use 'user_id'
+          .eq('user_id', user.id)
           .single();
 
       return UserDetails.fromMap(response);

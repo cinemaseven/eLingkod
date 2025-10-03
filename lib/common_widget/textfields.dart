@@ -10,8 +10,8 @@ class TxtField extends StatelessWidget {
   final TextEditingController? controller;
   final bool obscure;
   final bool readOnly;
-  final Widget? suffixIcon; // 🔹 for icons like calendar / dropdown
-  final VoidCallback? onTap; // 🔹 to handle picker taps
+  final Widget? suffixIcon;
+  final VoidCallback? onTap;
 
   const TxtField({
     super.key,
@@ -41,6 +41,7 @@ class TxtField extends StatelessWidget {
             vertical: .5,
             horizontal: 15,
           ),
+          suffixIcon: suffixIcon,
         );
 
       case TxtFieldType.services:
@@ -48,17 +49,18 @@ class TxtField extends StatelessWidget {
           hintText: hint,
           hintStyle: TextStyle(color: ElementColors.placeholder),
           filled: true,
-          fillColor: Colors.grey[300], // 🔹 light gray bg
+          fillColor: Colors.grey[300],
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10), // 🔹 rounded corners
+            borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(
               color: Colors.grey.shade200,
-            ), // 🔹 no border line
+            ),
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 14,
             horizontal: 15,
           ),
+          suffixIcon: suffixIcon,
         );
 
       case TxtFieldType.profile:
@@ -91,7 +93,8 @@ class TxtField extends StatelessWidget {
       obscureText: obscure,
       readOnly: readOnly,
       style: const TextStyle(fontSize: 13),
-      decoration: _getDecoration(),
+      decoration: _getDecoration().copyWith(
+    suffixIcon: suffixIcon),
     );
 
     if (type == TxtFieldType.services) {
@@ -99,7 +102,7 @@ class TxtField extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
         child: Column(
           crossAxisAlignment:
-              CrossAxisAlignment.start, // 🔹 aligns label to left
+              CrossAxisAlignment.start,
           children: [
             if (label != null) ...[
               Text(
@@ -110,7 +113,7 @@ class TxtField extends StatelessWidget {
                   color: ElementColors.fontColor1,
                 ),
               ),
-              const SizedBox(height: 6), // space between label & field
+              const SizedBox(height: 6),
             ],
             Container(
               decoration: BoxDecoration(
@@ -141,7 +144,7 @@ class TxtField extends StatelessWidget {
                 color: Colors.black.withOpacity(0.1),
                 offset: const Offset(2, 2),
                 blurRadius: 4,
-                spreadRadius: -2, // negative spread → makes it look inset
+                spreadRadius: -2,
               ),
               BoxShadow(
                 color: Colors.white.withOpacity(0.7),

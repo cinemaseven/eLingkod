@@ -85,11 +85,13 @@ class OtpverifyPopup extends StatefulWidget {
   // We make both optional, but require at least one using an assert
   final String? phoneNumber;
   final String? email;
+  final VoidCallback? onVerified;
 
   const OtpverifyPopup({
     super.key,
     this.phoneNumber,
     this.email,
+    this.onVerified,
   }) : assert(phoneNumber != null || email != null, 'Either phoneNumber or email must be provided for verification.');
 
   @override
@@ -121,14 +123,15 @@ class _OtpverifyPopupState extends State<OtpverifyPopup> {
       // Dismiss the dialog on success
       if (mounted) Navigator.of(context).pop();
 
-      // Navigate to the next screen on success
-      if (mounted) {
-        Navigator.push(
-          context,
-          CustomPageRoute(
-            page: ProfileInfo(),
-          ),
-        );
+      if (widget.onVerified != null) {
+        widget.onVerified!();
+      } else {
+        if (mounted) {
+          Navigator.push(
+            context,
+            CustomPageRoute(page: ProfileInfo()),
+          );
+        }
       }
     } catch (e) {
       // Show error snackbar
