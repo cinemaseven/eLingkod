@@ -1,11 +1,13 @@
-// import 'package:flutter/material.dart';
+
 // import 'package:elingkod/common_style/colors_extension.dart';
+// import 'package:elingkod/common_widget/custom_pageRoute.dart';
 // import 'package:elingkod/common_widget/hamburger.dart';
 // import 'package:elingkod/common_widget/search_bar.dart';
-// import 'package:elingkod/common_widget/custom_pageRoute.dart';
 // import 'package:elingkod/pages/barangay_clearance.dart';
 // import 'package:elingkod/pages/barangay_id.dart';
 // import 'package:elingkod/pages/business_clearance.dart';
+// import 'package:flutter/material.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 
 // class RequestStatusPage extends StatefulWidget {
 //   const RequestStatusPage({super.key});
@@ -15,28 +17,74 @@
 // }
 
 // class _RequestStatusPageState extends State<RequestStatusPage> {
-//   final List<Map<String, dynamic>> _requests = [
-//     {
-//       "icon": Icons.credit_card,
-//       "title": "Barangay ID",
-//       "status": "In-process",
-//       "page": const BarangayID(), // 👈 redirect here
-//     },
-//     {
-//       "icon": Icons.article,
-//       "title": "Barangay Clearance",
-//       "status": "In-process",
-//       "page": const BarangayClearance(),
-//     },
-//     {
-//       "icon": Icons.folder,
-//       "title": "Business Clearance",
-//       "status": "Ready for Pick-up",
-//       "page": const BusinessClearance(),
-//     },
-//   ];
+//   final SupabaseClient supabase = Supabase.instance.client;
 
+//   List<Map<String, dynamic>> _requests = [];
 //   bool _isSearching = false;
+//   bool _isLoading = true;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _fetchRequests();
+//   }
+
+//   Future<void> _fetchRequests() async {
+//     final user = supabase.auth.currentUser;
+//     if (user == null) return;
+
+//     List<Map<String, dynamic>> requests = [];
+
+//     // 🔹 Barangay ID
+//     final barangayIdRes = await supabase
+//         .from('barangay_id_request')
+//         .select('barangay_id_id, status')
+//         .eq('user_id', user.id);
+
+//     for (final r in barangayIdRes) {
+//       requests.add({
+//         "icon": Icons.credit_card,
+//         "title": "Barangay ID",
+//         "status": r['status'] ?? 'Unknown',
+//         "page": const BarangayID(),
+//       });
+//     }
+
+//     // 🔹 Barangay Clearance
+//     final clearanceRes = await supabase
+//         .from('barangay_clearance_request')
+//         .select('barangay_clearance_, status')
+//         .eq('user_id', user.id);
+
+//     for (final r in clearanceRes) {
+//       requests.add({
+//         "icon": Icons.article,
+//         "title": "Barangay Clearance",
+//         "status": r['status'] ?? 'Unknown',
+//         "page": const BarangayClearance(),
+//       });
+//     }
+
+//     // 🔹 Business Clearance
+//     final businessRes = await supabase
+//         .from('business_clearance_request')
+//         .select('business_clearance_, status')
+//         .eq('user_id', user.id);
+
+//     for (final r in businessRes) {
+//       requests.add({
+//         "icon": Icons.folder,
+//         "title": "Business Clearance",
+//         "status": r['status'] ?? 'Unknown',
+//         "page": const BusinessClearance(),
+//       });
+//     }
+
+//     setState(() {
+//       _requests = requests;
+//       _isLoading = false;
+//     });
+//   }
 
 //   @override
 //   Widget build(BuildContext context) {
@@ -60,10 +108,7 @@
 //               items: _requests,
 //               itemLabel: (item) => item["title"],
 //               itemBuilder: (context, item) => ListTile(
-//                 leading: Icon(item["icon"], color: Colors.black87),
 //                 title: Text(item["title"]),
-//                 subtitle: Text(item["status"],
-//                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
 //               ),
 //               onItemTap: (item) {
 //                 Navigator.push(
@@ -72,9 +117,6 @@
 //                 );
 //               },
 //               hintText: "Can't find what you're looking for?",
-//               onSearchChanged: (isSearching) {
-//                 setState(() => _isSearching = isSearching);
-//               },
 //             ),
 //           ),
 
@@ -125,19 +167,21 @@
 
 //             const SizedBox(height: 20),
 
-//             // Full request list
+//             // Full request list or loading indicator
 //             Expanded(
-//               child: ListView.builder(
-//                 itemCount: _requests.length,
-//                 itemBuilder: (context, index) {
-//                   final request = _requests[index];
-//                   return _buildRequestRow(
-//                     icon: request["icon"],
-//                     title: request["title"],
-//                     status: request["status"],
-//                   );
-//                 },
-//               ),
+//               child: _isLoading
+//                   ? const Center(child: CircularProgressIndicator())
+//                   : ListView.builder(
+//                       itemCount: _requests.length,
+//                       itemBuilder: (context, index) {
+//                         final request = _requests[index];
+//                         return _buildRequestRow(
+//                           icon: request["icon"],
+//                           title: request["title"],
+//                           status: request["status"],
+//                         );
+//                       },
+//                     ),
 //             ),
 //           ],
 //         ],
@@ -206,14 +250,13 @@
 //     );
 //   }
 // }
-
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
-import 'package:elingkod/common_widget/hamburger.dart';
 import 'package:elingkod/common_widget/search_bar.dart';
 import 'package:elingkod/pages/barangay_clearance.dart';
 import 'package:elingkod/pages/barangay_id.dart';
 import 'package:elingkod/pages/business_clearance.dart';
+import 'package:elingkod/pages/home.dart'; 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -231,24 +274,40 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
   bool _isSearching = false;
   bool _isLoading = true;
 
+  // Subscriptions
+  RealtimeChannel? _idSub;
+  RealtimeChannel? _clearanceSub;
+  RealtimeChannel? _businessSub;
+
   @override
   void initState() {
     super.initState();
     _fetchRequests();
+    _setupRealtime();
+  }
+
+  @override
+  void dispose() {
+    _idSub?.unsubscribe();
+    _clearanceSub?.unsubscribe();
+    _businessSub?.unsubscribe();
+    super.dispose();
   }
 
   Future<void> _fetchRequests() async {
     final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
     List<Map<String, dynamic>> requests = [];
 
     // 🔹 Barangay ID
     final barangayIdRes = await supabase
         .from('barangay_id_request')
-        .select('barangay_id_id, status')
-        .eq('user_id', user.id);
-
+        .select('status')
+        .eq('user_id', user.id) as List;
     for (final r in barangayIdRes) {
       requests.add({
         "icon": Icons.credit_card,
@@ -261,9 +320,8 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     // 🔹 Barangay Clearance
     final clearanceRes = await supabase
         .from('barangay_clearance_request')
-        .select('barangay_clearance_, status')
-        .eq('user_id', user.id);
-
+        .select('status')
+        .eq('user_id', user.id) as List;
     for (final r in clearanceRes) {
       requests.add({
         "icon": Icons.article,
@@ -276,9 +334,8 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     // 🔹 Business Clearance
     final businessRes = await supabase
         .from('business_clearance_request')
-        .select('business_clearance_, status')
-        .eq('user_id', user.id);
-
+        .select('status')
+        .eq('user_id', user.id) as List;
     for (final r in businessRes) {
       requests.add({
         "icon": Icons.folder,
@@ -294,6 +351,56 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     });
   }
 
+  void _setupRealtime() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    // Barangay ID Realtime
+    _idSub = supabase.channel('barangay_id_changes').onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'barangay_id_request',
+      callback: (payload) {
+        final user = supabase.auth.currentUser;
+        if (user == null) return;
+
+        // only update if the event is for THIS user
+        final newRow = payload.newRecord;
+        if (newRow['user_id'] == user.id) {
+          _fetchRequests();
+        }
+      },
+    ).subscribe();
+
+    // Barangay Clearance Realtime
+    _clearanceSub = supabase.channel('barangay_clearance_changes').onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'barangay_clearance_request',
+      callback: (payload) {
+        final user = supabase.auth.currentUser;
+        if (user == null) return;
+        if (payload.newRecord['user_id'] == user.id) {
+          _fetchRequests();
+        }
+      },
+    ).subscribe();
+
+    // Business Clearance Realtime
+    _businessSub = supabase.channel('business_clearance_changes').onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'business_clearance_request',
+      callback: (payload) {
+        final user = supabase.auth.currentUser;
+        if (user == null) return;
+        if (payload.newRecord['user_id'] == user.id) {
+          _fetchRequests();
+        }
+      },
+    ).subscribe();
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -304,12 +411,20 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       appBar: AppBar(
         backgroundColor: ElementColors.primary,
         elevation: 0,
-        iconTheme: IconThemeData(color: ElementColors.fontColor2),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              CustomPageRoute(page: const Home()),
+            );
+          },
+        ),
       ),
-      drawer: const Hamburger(),
+
       body: Column(
         children: [
-          // 🔹 Search bar for requests
+          // 🔹 Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
             child: CustomSearchBar<Map<String, dynamic>>(
@@ -328,7 +443,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
             ),
           ),
 
-          // 🔹 Show table + requests only if NOT searching
           if (!_isSearching) ...[
             // Table header
             Container(
@@ -375,7 +489,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
             const SizedBox(height: 20),
 
-            // Full request list or loading indicator
+            // 🔹 Requests or loading
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -458,3 +572,5 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     );
   }
 }
+
+

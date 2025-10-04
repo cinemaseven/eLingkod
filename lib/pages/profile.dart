@@ -1,8 +1,9 @@
 import 'dart:io';
 
 import 'package:elingkod/common_style/colors_extension.dart';
-import 'package:elingkod/common_widget/hamburger.dart';
+import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/services/userData_service.dart';
+import 'package:elingkod/pages/home.dart'; 
 import 'package:flutter/material.dart';
 
 class Profile extends StatefulWidget {
@@ -158,9 +159,16 @@ class _ProfileState extends State<Profile> {
       appBar: AppBar(
         backgroundColor: ElementColors.primary,
         elevation: 0,
-        iconTheme: IconThemeData(color: ElementColors.fontColor2),
+        leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            CustomPageRoute(page: const Home()),
+          );
+        },
       ),
-      drawer: const Hamburger(),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _userDetails == null
