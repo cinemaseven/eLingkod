@@ -27,7 +27,8 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
   File? _frontPWDImage;
   File? _backPWDImage;
 
-  final TextEditingController idNum = TextEditingController();
+  final TextEditingController pwdIDNum = TextEditingController();
+  final TextEditingController seniorIDNum = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final UserDataService _userDataService = UserDataService();
 
@@ -49,7 +50,8 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
     if (_formKey.currentState!.validate()) {
       try {
         // Get ID number, but only if "Yes" is selected. Otherwise, set it to null.
-        final String? idNumber = (pwdYesOrNo == 'Yes') ? idNum.text.trim() : null;
+        final String? seniorIDNumber = (seniorYesOrNo == 'Yes') ? seniorIDNum.text.trim() : null;
+        final String? pwdIDNumber = (pwdYesOrNo == 'Yes') ? pwdIDNum.text.trim() : null;
 
         // Set images to null if the user selected "No"
         final File? seniorCardImage = (seniorYesOrNo == 'Yes') ? _seniorCardImage: null;
@@ -60,9 +62,10 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
         await _userDataService.saveCompleteOnboardingProfile(
           initialProfileData: widget.profileData,
           seniorYesOrNo: seniorYesOrNo,
+          seniorIDNum: seniorIDNumber,
           seniorCardImage: seniorCardImage,
           pwdYesOrNo: pwdYesOrNo,
-          idNum: idNumber,
+          pwdIDNum: pwdIDNumber,
           frontPWDImage: frontPWDImage,
           backPWDImage: backPWDImage,
         );
@@ -212,8 +215,22 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                   },
                 ),
                 
-                // Show Senior Card Upload ONLY if Yes
+                // Show Senior Card ID Number and Upload ONLY if Yes
                 if (seniorYesOrNo == 'Yes') ...[
+                  const SizedBox(height: 20),
+                  TxtField(
+                    type: TxtFieldType.services,
+                    label: 'Please provide your Senior Citizen ID number:*',
+                    hint: "6 digits ID Number",
+                    controller: seniorIDNum,
+                    keyboardType: TextInputType.text,
+                    validator: (value) {
+                      if (seniorYesOrNo == 'Yes' && (value == null || value.isEmpty)) {
+                        return 'This field is required.';
+                      }
+                      return null;
+                    },
+                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
                     child: Align(
@@ -262,14 +279,14 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                     return null;
                   },
                 ),
-                // PWD ID number
+                //Show PWD ID Number and Card Upload ONLY if Yes
                 if (pwdYesOrNo == 'Yes') ...[
                   const SizedBox(height: 20),
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Please provide your PWD ID number:*',
                     hint: "RR-PPMM-BBB-NNNNNNN",
-                    controller: idNum,
+                    controller: pwdIDNum,
                     keyboardType: TextInputType.text,
                     validator: (value) {
                       if (pwdYesOrNo == 'Yes' && (value == null || value.isEmpty)) {

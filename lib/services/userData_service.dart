@@ -24,6 +24,7 @@ class UserDetails {
   final String? civilStatus;
   final String? voterStatus;
   final bool? isSenior;
+  final String? seniorIDNum;
   final String? seniorCardImageURL;
   final bool? isPwd;
   final String? pwdIDNum;
@@ -50,6 +51,7 @@ class UserDetails {
     this.civilStatus,
     this.voterStatus,
     this.isSenior,
+    this.seniorIDNum,
     this.seniorCardImageURL,
     this.isPwd,
     this.pwdIDNum,
@@ -78,6 +80,7 @@ class UserDetails {
       civilStatus: map['civilStatus'] as String?,
       voterStatus: map['voterStatus'] as String?,
       isSenior: map['isSenior'] as bool?,
+      seniorIDNum: map['seniorIDNum'] as String?,
       seniorCardImageURL: map['seniorCardImageURL'] as String?,
       isPwd: map['isPwd'] as bool?,
       pwdIDNum: map['pwdIDNum'] as String?,
@@ -107,6 +110,7 @@ class UserDetails {
     String? civilStatus,
     String? voterStatus,
     bool? isSenior,
+    String? seniorIDNum,
     String? seniorCardImageURL,
     bool? isPwd,
     String? pwdIDNum,
@@ -135,6 +139,7 @@ class UserDetails {
       civilStatus: civilStatus ?? this.civilStatus,
       voterStatus: voterStatus ?? this.voterStatus,
       isSenior: isSenior ?? this.isSenior,
+      seniorIDNum: seniorIDNum ?? this.seniorIDNum,
       seniorCardImageURL: seniorCardImageURL ?? this.seniorCardImageURL,
       isPwd: isPwd ?? this.isPwd,
       pwdIDNum: pwdIDNum ?? this.pwdIDNum,
@@ -177,9 +182,10 @@ class UserDataService {
   Future<void> saveCompleteOnboardingProfile({
     required Map<String, dynamic> initialProfileData,
     required String? seniorYesOrNo,
+    required String? seniorIDNum,
     required File? seniorCardImage,
     required String? pwdYesOrNo,
-    required String? idNum,
+    required String? pwdIDNum,
     required File? frontPWDImage,
     required File? backPWDImage,
   }) async {
@@ -238,9 +244,10 @@ class UserDataService {
       'civilStatus': initialProfileData['civilStatus'],
       'voterStatus': initialProfileData['voterStatus'],
       'isSenior': isSenior,
+      'seniorIDNum': isSenior ? seniorIDNum : null,
       'seniorCardImageURL': isSenior ? seniorCardImageUrl : null,
       'isPwd': isPwd,
-      'pwdIDNum': isPwd ? idNum : null,
+      'pwdIDNum': isPwd ? pwdIDNum : null,
       'frontPWDImageURL': isPwd ? frontPWDImageUrl : null,
       'backPWDImageURL': isPwd ? backPWDImageUrl : null,
     };
