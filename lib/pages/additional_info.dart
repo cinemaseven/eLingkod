@@ -234,12 +234,12 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                         await  _pickImage((file) => _seniorCardImage = file);
                         return _seniorCardImage;
                       },
-                      validator: (imageFile) {
-                        if (seniorYesOrNo == 'Yes' && imageFile == null) {
-                          return 'Please upload your card..';
-                        }
-                        return null;
-                      },
+                      // validator: (imageFile) {
+                      //   if (seniorYesOrNo == 'Yes' && imageFile == null) {
+                      //     return 'Please upload your card..';
+                      //   }
+                      //   return null;
+                      // },
                     ),
                   ),
                 ],
@@ -299,12 +299,12 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                             await _pickImage((file) => _frontPWDImage = file);
                             return _frontPWDImage;
                           },
-                          validator: (imageFile) {
-                            if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                              return 'Please upload the front image.';
-                            }
-                            return null;
-                          },
+                          // validator: (imageFile) {
+                          //   if (pwdYesOrNo == 'Yes' && imageFile == null) {
+                          //     return 'Please upload the front image.';
+                          //   }
+                          //   return null;
+                          // },
                         ),
                         const SizedBox(height: 20),
                         UploadImageBox(
@@ -314,12 +314,12 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                             await _pickImage((file) => _backPWDImage = file);
                             return _backPWDImage;
                           },
-                          validator: (imageFile) {
-                            if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                              return 'Please upload the back image.';
-                            }
-                            return null;
-                          },
+                          // validator: (imageFile) {
+                          //   if (pwdYesOrNo == 'Yes' && imageFile == null) {
+                          //     return 'Please upload the back image.';
+                          //   }
+                          //   return null;
+                          // },
                         )
                       ],
                     ),

@@ -198,7 +198,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
             'ownershipType': ownershipType,
             'locationStatus': locationStatus,
             'totalArea': totalArea.text,
-            'capitalization:': capitalization.text,
+            'capitalization': capitalization.text,
             'grossSales': grossSales.text,
             'ownerName': ownerName.text,
             'contactNumber': contactNumber.text,
@@ -271,6 +271,15 @@ class _BusinessClearanceState extends State<BusinessClearance> {
         backgroundColor: ElementColors.primary,
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            CustomPageRoute(page: const Home()),
+          );
+        },
+      ),
       ),
       body: Form(
         key: _formKey,
@@ -284,17 +293,8 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            CustomPageRoute(page: const Home()),
-                          );
-                        },
-                      ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ElementColors.tertiary,

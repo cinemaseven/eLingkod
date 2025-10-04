@@ -96,7 +96,7 @@ class BarangayIDRequest {
   final String? city;
   final String? province;
   final String? zipCode;
-  final String? purpose;
+  final List<String>? idPurpose;
   final String? validIdImageURL;
   final String? residencyImageURL;
   final String? signatureImageURL;
@@ -116,7 +116,7 @@ class BarangayIDRequest {
     this.city,
     this.province,
     this.zipCode,
-    this.purpose,
+    this.idPurpose,
     this.validIdImageURL,
     this.residencyImageURL,
     this.signatureImageURL,
@@ -138,7 +138,7 @@ class BarangayIDRequest {
       'city': city,
       'province': province,
       'zipCode': zipCode,
-      'purpose': purpose,
+      'idPurpose': idPurpose,
       'validIdImageURL': validIdImageURL,
       'residencyImageURL': residencyImageURL,
       'signatureImageURL': signatureImageURL,
@@ -296,45 +296,52 @@ class SubmitRequestService {
   Future<void> submitBarangayClearance({
     required Map<String, dynamic> formData,
   }) async {
-    final userId = _getCurrentUserId();
-    
-    // --- 1. UPLOAD SIGNATURE IMAGE ---
-    final File? signatureImage = formData['signatureImage'] as File?;
-    String? signatureImageUrl;
+    try {
+      final userId = _getCurrentUserId();
+      
+      // --- 1. UPLOAD SIGNATURE IMAGE ---
+      final File? signatureImage = formData['signatureImage'] as File?;
+      String? signatureImageUrl;
 
-    if (signatureImage != null) {
-      signatureImageUrl = await _uploadFile(signatureImage, 'signatureImage', 'barangay-clearance-images'); 
-      if (signatureImageUrl == null) {
-        throw Exception("Failed to upload signature image.");
+      if (signatureImage != null) {
+        signatureImageUrl = await _uploadFile(signatureImage, 'signatureImage', 'barangay-clearance-images'); 
+        if (signatureImageUrl == null) {
+          throw Exception("Failed to upload signature image.");
+        }
       }
+      
+      // --- 2. CONSTRUCT AND SUBMIT DATA ---
+      final request = BarangayClearanceRequest(
+        user_id: userId,
+        applicationDate: formData['applicationDate'],
+        residencyType: formData['residencyType'],
+        lengthStay: formData['lengthStay'],
+        clearanceNum: formData['clearanceNum'],
+        fullName: formData['fullName'],
+        gender: formData['gender'],
+        houseNum: formData['houseNum'],
+        street: formData['street'],
+        city: formData['city'],
+        province: formData['province'],
+        zipCode: formData['zipCode'],
+        birthDate: formData['birthDate'],
+        age: formData['age'],
+        contactNumber: formData['contactNumber'],
+        birthPlace: formData['birthPlace'],
+        nationality: formData['nationality'],
+        civilStatus: formData['civilStatus'],
+        email: formData['email'],
+        purpose: formData['purpose'],
+        signatureImageURL: signatureImageUrl,
+      );
+      await _submitRequest('barangay_clearance_request', request.toMap());
+    } catch (e) { // <-- CATCH BLOCK
+    // Log the error and re-throw, or handle it here if necessary
+    print("Error during Barangay Clearance submission: $e");
+    rethrow; // Re-throwing ensures the UI layer can catch it and show a SnackBar.
     }
-    
-    // --- 2. CONSTRUCT AND SUBMIT DATA ---
-    final request = BarangayClearanceRequest(
-      user_id: userId,
-      applicationDate: formData['applicationDate'],
-      residencyType: formData['residencyType'],
-      lengthStay: formData['lengthStay'],
-      clearanceNum: formData['clearanceNum'],
-      fullName: formData['fullName'],
-      gender: formData['gender'],
-      houseNum: formData['houseNum'],
-      street: formData['street'],
-      city: formData['city'],
-      province: formData['province'],
-      zipCode: formData['zipCode'],
-      birthDate: formData['birthDate'],
-      age: formData['age'],
-      contactNumber: formData['contactNumber'],
-      birthPlace: formData['birthPlace'],
-      nationality: formData['nationality'],
-      civilStatus: formData['civilStatus'],
-      email: formData['email'],
-      purpose: formData['purpose'],
-      signatureImageURL: signatureImageUrl,
-    );
-    await _submitRequest('barangay_clearance_request', request.toMap());
   }
+    
 
   // ---------------------------------------------------------------------------
   // BARANGAY ID SUBMISSION
@@ -344,57 +351,63 @@ class SubmitRequestService {
   Future<void> submitBarangayID({
     required Map<String, dynamic> formData,
   }) async {
-    final userId = _getCurrentUserId();
+    try {
+      final userId = _getCurrentUserId();
     
-    // --- 1. VALIDATE & UPLOAD FILES ---
-    // The previous screen ensures these are not null, but we check and cast here.
-    final File? validIdImage = formData['validIdImage'] as File?;
-    final File? residencyImage = formData['residencyImage'] as File?;
-    final File? signatureImage = formData['signatureImage'] as File?;
+      // --- 1. VALIDATE & UPLOAD FILES ---
+      // The previous screen ensures these are not null, but we check and cast here.
+      final File? validIdImage = formData['validIdImage'] as File?;
+      final File? residencyImage = formData['residencyImage'] as File?;
+      final File? signatureImage = formData['signatureImage'] as File?;
 
-    // Upload all files concurrently
-    final results = await Future.wait([
-      validIdImage != null ? _uploadFile(validIdImage, 'validIdImage', 'barangay-id-images') : Future.value(null),
-      residencyImage != null ? _uploadFile(residencyImage, 'residencyImage', 'barangay-id-images') : Future.value(null),
-      signatureImage != null ? _uploadFile(signatureImage, 'signatureImage', 'barangay-id-images') : Future.value(null),
-    ]);
+      // Upload all files concurrently
+      final results = await Future.wait([
+        validIdImage != null ? _uploadFile(validIdImage, 'validIdImage', 'barangay-id-images') : Future.value(null),
+        residencyImage != null ? _uploadFile(residencyImage, 'residencyImage', 'barangay-id-images') : Future.value(null),
+        signatureImage != null ? _uploadFile(signatureImage, 'signatureImage', 'barangay-id-images') : Future.value(null),
+      ]);
 
-    final validIdUrl = results[0];
-    final residencyUrl = results[1];
-    final signatureUrl = results[2];
+      final validIdUrl = results[0];
+      final residencyUrl = results[1];
+      final signatureUrl = results[2];
 
-    // Ensure all uploads succeeded
-    if (validIdUrl == null) {
-      throw Exception("Failed to upload Valid ID image.");
+      // // Ensure all uploads succeeded
+      // if (validIdUrl == null) {
+      //   throw Exception("Failed to upload Valid ID image.");
+      // }
+      // if (residencyUrl == null) {
+      //   throw Exception("Failed to upload Proof of Residency image.");
+      // }
+      // if (signatureUrl == null) {
+      //   throw Exception("Failed to upload Signature image.");
+      // }
+
+      // --- 2. CONSTRUCT AND SUBMIT DATA ---
+      final request = BarangayIDRequest(
+        user_id: userId,
+        applicationDate: formData['applicationDate'],
+        fullName: formData['fullName'],
+        birthDate: formData['birthDate'],
+        age: formData['age'],
+        contactNumber: formData['contactNumber'],
+        email: formData['email'],
+        gender: formData['gender'],
+        houseNum: formData['houseNum'],
+        street: formData['street'],
+        city: formData['city'],
+        province: formData['province'],
+        zipCode: formData['zipCode'],
+        idPurpose: formData['idPurpose'] as List<String>?,
+        validIdImageURL: validIdUrl,
+        residencyImageURL: residencyUrl,
+        signatureImageURL: signatureUrl,
+      );
+      await _submitRequest('barangay_id_request', request.toMap());
+    } catch (e) { // <-- CATCH BLOCK
+    // Log the error and re-throw, or handle it here if necessary
+    print("Error during Barangay ID submission: $e");
+    rethrow; // Re-throwing ensures the UI layer can catch it and show a SnackBar.
     }
-    if (residencyUrl == null) {
-      throw Exception("Failed to upload Proof of Residency image.");
-    }
-    if (signatureUrl == null) {
-      throw Exception("Failed to upload Signature image.");
-    }
-
-    // --- 2. CONSTRUCT AND SUBMIT DATA ---
-    final request = BarangayIDRequest(
-      user_id: userId,
-      applicationDate: formData['applicationDate'],
-      fullName: formData['fullName'],
-      birthDate: formData['birthDate'],
-      age: formData['age'],
-      contactNumber: formData['contactNumber'],
-      email: formData['email'],
-      gender: formData['gender'],
-      houseNum: formData['houseNum'],
-      street: formData['street'],
-      city: formData['city'],
-      province: formData['province'],
-      zipCode: formData['zipCode'],
-      purpose: formData['purpose'],
-      validIdImageURL: validIdUrl,
-      residencyImageURL: residencyUrl,
-      signatureImageURL: signatureUrl,
-    );
-    await _submitRequest('barangay_id_request', request.toMap());
   }
 
   // ---------------------------------------------------------------------------
@@ -403,76 +416,82 @@ class SubmitRequestService {
   Future<void> submitBusinessClearance({
     required Map<String, dynamic> formData,
   }) async {
-    final userId = _getCurrentUserId();
+    try {
+      final userId = _getCurrentUserId();
 
-    // --- 1. VALIDATE & UPLOAD FILES ---
-    final File? dtiCertFile = formData['dtiCertFile'] as File?;
-    final File? secCertFile = formData['secCertFile'] as File?;
-    final File? cdaFile = formData['cdaFile'] as File?;
-    final File? barangayClrncImage = formData['barangayClrncImage'] as File?;
-    final File? landTitleFile = formData['landTitleFile'] as File?;
-    final File? contractsFile = formData['contractsFile'] as File?;
-    final File? establishmentImage = formData['establishmentImage'] as File?;
-    final File? ownerImage = formData['ownerImage'] as File?;
-    final File? endorsementFile = formData['endorsementFile'] as File?;
-    final File? signatureImage = formData['signatureImage'] as File?;
+      // --- 1. VALIDATE & UPLOAD FILES ---
+      final File? dtiCertFile = formData['dtiCertFile'] as File?;
+      final File? secCertFile = formData['secCertFile'] as File?;
+      final File? cdaFile = formData['cdaFile'] as File?;
+      final File? barangayClrncImage = formData['barangayClrncImage'] as File?;
+      final File? landTitleFile = formData['landTitleFile'] as File?;
+      final File? contractsFile = formData['contractsFile'] as File?;
+      final File? establishmentImage = formData['establishmentImage'] as File?;
+      final File? ownerImage = formData['ownerImage'] as File?;
+      final File? endorsementFile = formData['endorsementFile'] as File?;
+      final File? signatureImage = formData['signatureImage'] as File?;
 
-    // Upload all files concurrently
-    final results = await Future.wait([
-      dtiCertFile != null ? _uploadFile(dtiCertFile, 'dtiCertFile', 'business-clearance-images') : Future.value(null),
-      secCertFile != null ? _uploadFile(secCertFile, 'secCertFile', 'business-clearance-images') : Future.value(null),
-      cdaFile != null ? _uploadFile(cdaFile, 'cdaFile', 'business-clearance-images') : Future.value(null),
-      barangayClrncImage != null ? _uploadFile(barangayClrncImage, 'barangayClrncImage', 'business-clearance-images') : Future.value(null),
-      landTitleFile != null ? _uploadFile(landTitleFile, 'landTitleFile', 'business-clearance-images') : Future.value(null),
-      contractsFile != null ? _uploadFile(contractsFile, 'contractsFile', 'business-clearance-images') : Future.value(null),
-      establishmentImage != null ? _uploadFile(establishmentImage, 'establishmentImage', 'business-clearance-images') : Future.value(null),
-      ownerImage != null ? _uploadFile(ownerImage, 'ownerImage', 'business-clearance-images') : Future.value(null),
-      endorsementFile != null ? _uploadFile(endorsementFile, 'endorsementFile', 'business-clearance-images') : Future.value(null),
-      signatureImage != null ? _uploadFile(signatureImage, 'signatureImage', 'business-clearance-images') : Future.value(null),
-    ]);
+      // Upload all files concurrently
+      final results = await Future.wait([
+        dtiCertFile != null ? _uploadFile(dtiCertFile, 'dtiCertFile', 'business-clearance-images') : Future.value(null),
+        secCertFile != null ? _uploadFile(secCertFile, 'secCertFile', 'business-clearance-images') : Future.value(null),
+        cdaFile != null ? _uploadFile(cdaFile, 'cdaFile', 'business-clearance-images') : Future.value(null),
+        barangayClrncImage != null ? _uploadFile(barangayClrncImage, 'barangayClrncImage', 'business-clearance-images') : Future.value(null),
+        landTitleFile != null ? _uploadFile(landTitleFile, 'landTitleFile', 'business-clearance-images') : Future.value(null),
+        contractsFile != null ? _uploadFile(contractsFile, 'contractsFile', 'business-clearance-images') : Future.value(null),
+        establishmentImage != null ? _uploadFile(establishmentImage, 'establishmentImage', 'business-clearance-images') : Future.value(null),
+        ownerImage != null ? _uploadFile(ownerImage, 'ownerImage', 'business-clearance-images') : Future.value(null),
+        endorsementFile != null ? _uploadFile(endorsementFile, 'endorsementFile', 'business-clearance-images') : Future.value(null),
+        signatureImage != null ? _uploadFile(signatureImage, 'signatureImage', 'business-clearance-images') : Future.value(null),
+      ]);
 
-    final dtiCertUrl = results[0];
-    final secCertUrl = results[1];
-    final cdaFileUrl = results[2];
-    final barangayClrncUrl = results[3];
-    final landTitleUrl = results[4];
-    final contractsUrl = results[5];
-    final establishmentUrl = results[6];
-    final ownerImageUrl = results[7];
-    final endorsementUrl = results[8];
-    final signatureUrl = results[9];
+      final dtiCertUrl = results[0];
+      final secCertUrl = results[1];
+      final cdaFileUrl = results[2];
+      final barangayClrncUrl = results[3];
+      final landTitleUrl = results[4];
+      final contractsUrl = results[5];
+      final establishmentUrl = results[6];
+      final ownerImageUrl = results[7];
+      final endorsementUrl = results[8];
+      final signatureUrl = results[9];
 
-    // --- 2. CONSTRUCT & SUBMIT DATA ---
-    final request = BusinessClearanceRequest(
-      user_id: userId,
-      applicationDate: formData['applicationDate'],
-      appType: formData['appType'],
-      businessName: formData['businessName'],
-      houseNum: formData['houseNum'],
-      bldgUnit: formData['bldgUnit'],
-      street: formData['street'],
-      village: formData['village'],
-      natureOfBusiness: formData['natureOfBusiness'],
-      ownershipType: formData['ownershipType'],
-      locationStatus: formData['locationStatus'],
-      totalArea: formData['totalArea'],
-      capitalization: formData['capitalization'],
-      grossSales: formData['grossSales'],
-      ownerName: formData['ownerName'],
-      contactNumber: formData['contactNumber'],
-      email: formData['email'],
-      dtiCertFileURL: dtiCertUrl,
-      secCertFileURL: secCertUrl,
-      cdaFileURL: cdaFileUrl,
-      barangayClrncImageURL: barangayClrncUrl,
-      landTitleFileURL: landTitleUrl,
-      contractsFileURL: contractsUrl,
-      establishmentImageURL: establishmentUrl,
-      ownerImageURL: ownerImageUrl,
-      endorsementFileURL: endorsementUrl,
-      signatureImageURL: signatureUrl,
-    );
+      // --- 2. CONSTRUCT & SUBMIT DATA ---
+      final request = BusinessClearanceRequest(
+        user_id: userId,
+        applicationDate: formData['applicationDate'],
+        appType: formData['appType'],
+        businessName: formData['businessName'],
+        houseNum: formData['houseNum'],
+        bldgUnit: formData['bldgUnit'],
+        street: formData['street'],
+        village: formData['village'],
+        natureOfBusiness: formData['natureOfBusiness'],
+        ownershipType: formData['ownershipType'],
+        locationStatus: formData['locationStatus'],
+        totalArea: formData['totalArea'],
+        capitalization: formData['capitalization'],
+        grossSales: formData['grossSales'],
+        ownerName: formData['ownerName'],
+        contactNumber: formData['contactNumber'],
+        email: formData['email'],
+        dtiCertFileURL: dtiCertUrl,
+        secCertFileURL: secCertUrl,
+        cdaFileURL: cdaFileUrl,
+        barangayClrncImageURL: barangayClrncUrl,
+        landTitleFileURL: landTitleUrl,
+        contractsFileURL: contractsUrl,
+        establishmentImageURL: establishmentUrl,
+        ownerImageURL: ownerImageUrl,
+        endorsementFileURL: endorsementUrl,
+        signatureImageURL: signatureUrl,
+      );
 
-    await _submitRequest('business_clearance_request', request.toMap());
+      await _submitRequest('business_clearance_request', request.toMap());
+    } catch (e) { // <-- CATCH BLOCK
+    // Log the error and re-throw, or handle it here if necessary
+    print("Error during Business Clearance submission: $e");
+    rethrow; // Re-throwing ensures the UI layer can catch it and show a SnackBar.
+    }
   }
 }

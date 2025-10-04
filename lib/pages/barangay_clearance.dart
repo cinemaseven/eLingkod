@@ -247,7 +247,7 @@ void _submitBarangayClearance() async {
     scaffoldMessenger.showSnackBar(
       SnackBar(
         content: const Text("Please fill out all required fields.",
-            style: TextStyle(fontWeight: FontWeight.bold)),
+          style: TextStyle(fontWeight: FontWeight.bold)),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         backgroundColor: ElementColors.secondary,
@@ -343,6 +343,15 @@ void _submitBarangayClearance() async {
         backgroundColor: ElementColors.primary,
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            CustomPageRoute(page: const Home()),
+          );
+        },
+      ),
       ),
       body: Form(
         key: _formKey,
@@ -356,12 +365,8 @@ void _submitBarangayClearance() async {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => Navigator.of(context).pushReplacement(CustomPageRoute(page: const Home())),
-                      ),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ElementColors.tertiary,

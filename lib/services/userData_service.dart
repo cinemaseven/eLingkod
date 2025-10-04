@@ -194,28 +194,28 @@ class UserDataService {
     final bool isPwd = pwdYesOrNo == 'Yes';
     final bool isSenior = seniorYesOrNo == 'Yes';
 
-    if (isSenior) {
-      if (seniorCardImage != null) {
-        seniorCardImageUrl = await _uploadFile(seniorCardImage, 'seniorCardImage', 'senior-pwd-images');
-        if (seniorCardImageUrl == null) {
-          throw Exception("Failed to upload senior citizen card image.");
-        }
-      } else {
-        throw Exception("Senior Citizen Card images are required but missing.");
-      }
-    }
+    // if (isSenior) {
+    //   if (seniorCardImage != null) {
+    //     seniorCardImageUrl = await _uploadFile(seniorCardImage, 'seniorCardImage', 'senior-pwd-images');
+    //     if (seniorCardImageUrl == null) {
+    //       throw Exception("Failed to upload senior citizen card image.");
+    //     }
+    //   } else {
+    //     throw Exception("Senior Citizen Card images are required but missing.");
+    //   }
+    // }
 
-    if (isPwd) {
-      if (frontPWDImage != null && backPWDImage != null) {
-        frontPWDImageUrl = await _uploadFile(frontPWDImage, 'frontPWDImage','senior-pwd-images');
-        backPWDImageUrl = await _uploadFile(backPWDImage, 'backPWDImage', 'senior-pwd-images');
-        if (frontPWDImageUrl == null || backPWDImageUrl == null) {
-          throw Exception("Failed to upload one or both PWD ID images.");
-        }
-      } else {
-        throw Exception("PWD ID images are required but missing.");
-      }
-    }
+    // if (isPwd) {
+    //   if (frontPWDImage != null && backPWDImage != null) {
+    //     frontPWDImageUrl = await _uploadFile(frontPWDImage, 'frontPWDImage','senior-pwd-images');
+    //     backPWDImageUrl = await _uploadFile(backPWDImage, 'backPWDImage', 'senior-pwd-images');
+    //     if (frontPWDImageUrl == null || backPWDImageUrl == null) {
+    //       throw Exception("Failed to upload one or both PWD ID images.");
+    //     }
+    //   } else {
+    //     throw Exception("PWD ID images are required but missing.");
+    //   }
+    // }
 
     // CONSTRUCT FINAL DATA PAYLOAD with CORRECT keys matching the database
     final Map<String, dynamic> finalProfileData = {
