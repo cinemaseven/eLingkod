@@ -6,11 +6,10 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/pages/additional_info.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileInfo extends StatefulWidget {
   const ProfileInfo({super.key});
-
-
 
   @override
   State<ProfileInfo> createState() => _ProfileInfoState();
@@ -145,6 +144,29 @@ Widget _buildCivilStatusDropdown() {
     ),
   );
 }
+
+  // Autofill email/contact number with the one they used for sign up
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromAuth();
+  }
+
+  void _prefillFromAuth() {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user != null) {
+      // If signed up using email
+      if (user.email != null && user.email!.isNotEmpty) {
+        email.text = user.email!;
+      }
+
+      // If signed up using phone
+      if (user.phone != null && user.phone!.isNotEmpty) {
+        contactNumber.text = user.phone!;
+      }
+    }
+  }
 
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {

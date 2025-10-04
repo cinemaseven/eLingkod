@@ -46,6 +46,21 @@ class _ProfileState extends State<Profile> {
   return statuses.join(" | "); // returns "Senior Citizen", "PWD", "Senior Citizen | PWD", or ""
 }
 
+String? _formatPhoneNumber(String? number) {
+  if (number == null || number.isEmpty) return number;
+
+  // Normalize and display as 09xxxxxxxxx
+  if (number.startsWith('63') && number.length == 12) {
+    return '0${number.substring(2)}'; // 63XXXXXXXXXX → 09XXXXXXXXX
+  }
+  if (number.startsWith('+63') && number.length == 13) {
+    return '0${number.substring(3)}'; // +63XXXXXXXXXX → 09XXXXXXXXX
+  }
+
+  return number; // already formatted or invalid
+}
+
+
   Future<void> _saveProfile() async {
     if (_userDetails == null) return;
 
@@ -242,8 +257,12 @@ class _ProfileState extends State<Profile> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (_userDetails?.isSenior == true) 
+                              buildRow("Senior Citizen ID No.", _userDetails?.seniorIDNum),
+                            if (_userDetails?.isPwd == true) 
+                              buildRow("PWD Citizen ID No.", _userDetails?.pwdIDNum),
                             buildRow("Email", _userDetails?.email),
-                            buildRow("Contact Number", _userDetails?.contactNumber),
+                            buildRow("Contact Number", _formatPhoneNumber(_userDetails?.contactNumber)),
                             buildRow("Gender", _userDetails?.gender),
                             buildRow("Date of Birth", _userDetails?.birthDate),
                             buildRow("Age", _userDetails?.age),

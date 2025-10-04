@@ -1,7 +1,7 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:flutter/material.dart';
 
-enum TxtFieldType { regis, services, profile }
+enum TxtFieldType { regis, services }
 
 class TxtField extends StatelessWidget {
   final TxtFieldType type;
@@ -62,27 +62,6 @@ class TxtField extends StatelessWidget {
           ),
           suffixIcon: suffixIcon,
         );
-
-      case TxtFieldType.profile:
-        return InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: ElementColors.placeholder),
-          filled: true,
-          fillColor: ElementColors.fontColor2,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.black26, width: 1), // border
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: ElementColors.secondary, width: 1.5), // active border
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 15,
-          ),
-          suffixIcon: suffixIcon,
-        );
     }
   }
 
@@ -129,32 +108,6 @@ class TxtField extends StatelessWidget {
               child: textField,
             ),
           ],
-        ),
-      );
-    }
-
-    if (type == TxtFieldType.profile) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(2, 2),
-                blurRadius: 4,
-                spreadRadius: -2,
-              ),
-              BoxShadow(
-                color: Colors.white.withOpacity(0.7),
-                offset: const Offset(-2, -2),
-                blurRadius: 4,
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          child: textField,
         ),
       );
     }

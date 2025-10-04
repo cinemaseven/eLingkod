@@ -2,7 +2,7 @@ import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:flutter/material.dart';
 
 // for textfields
-enum TxtFieldType { regis, services, profile }
+enum TxtFieldType { regis, services }
 
 // 1. TxtField is now a StatefulWidget
 class TxtField extends StatefulWidget {
@@ -87,25 +87,6 @@ class _TxtFieldState extends State<TxtField> {
           ),
           suffixIcon: widget.suffixIcon,
           errorStyle: errorTextStyle,
-        );
-
-      case TxtFieldType.profile:
-        return InputDecoration(
-          hintText: widget.hint,
-          hintStyle: TextStyle(color: ElementColors.placeholder),
-          filled: true,
-          fillColor: ElementColors.fontColor2,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 10,
-            horizontal: 12,
-          ),
-          suffixIcon: widget.suffixIcon,
-          errorStyle: errorTextStyle,
-          // suffixIcon: suffixIcon,
         );
     }
   }
