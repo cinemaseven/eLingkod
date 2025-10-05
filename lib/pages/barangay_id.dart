@@ -7,6 +7,7 @@ import 'package:elingkod/common_widget/date_picker.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/terms_agreement.dart';
+import 'package:elingkod/common_widget/pdf_generator.dart'; // pdf widget
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/services/submitRequests_service.dart';
 import 'package:elingkod/services/userData_service.dart';
@@ -271,33 +272,20 @@ void _submitBarangayID() async {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      ElevatedButton.icon(
+                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ElementColors.tertiary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 15),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Barangay ID button tapped!",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                              duration: const Duration(seconds: 3),
-                              behavior: SnackBarBehavior.floating,
-                              backgroundColor: ElementColors.secondary
-                            ),
-                          );
-                          Future.delayed(const Duration(seconds: 2), () {
-                            Navigator.pop(context);
-                          });
+                          PdfFormGenerator.generateBarangayId();
                         },
-                        icon: Icon(Icons.article,
-                            size: menuIconSize, color: Colors.white),
-                        label: Text("Barangay ID", style: labelStyle),
+                        icon: const Icon(Icons.picture_as_pdf),
+                        label: const Text("Barangay ID"), 
                       ),
                     ],
                   ),

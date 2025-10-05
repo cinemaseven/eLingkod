@@ -38,6 +38,8 @@ dependencies:
   camera: ^0.11.2
   image: ^4.2.0
   http: ^1.2.2
+  pdf: ^3.10.8    #pdf print
+  printing: ^5.13.4 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
