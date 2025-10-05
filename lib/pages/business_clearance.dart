@@ -134,27 +134,111 @@ class _BusinessClearanceState extends State<BusinessClearance> {
 
   // Pick an image
   Future<void> _pickImage(Function(File) onSelected) async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        onSelected(File(pickedFile.path));
-      });
-    }
-  }
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Container(
+        decoration: BoxDecoration(
+          color: ElementColors.primary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: ElementColors.fontColor2),
+                title: Text("Take a photo", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.camera);
+                  if (pickedFile != null) {
+                    setState(() {
+                      onSelected(File(pickedFile.path));
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 0),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: ElementColors.fontColor2),
+                title: Text("Choose from gallery", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.gallery);
+                  if (pickedFile != null) {
+                    setState(() {
+                      onSelected(File(pickedFile.path));
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 0),
+              ListTile(
+                leading: Icon(Icons.cancel, color: ElementColors.fontColor2),
+                title: Text("Cancel", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
   // Pick a file
   Future<void> _pickFile(Function(File) onSelected) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'docx'],
-    );
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        onSelected(File(result.files.single.path!));
-      });
-    }
-  }
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Container(
+        decoration: BoxDecoration(
+          color: ElementColors.primary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.folder_open, color: ElementColors.fontColor2),
+                title: Text("Choose from files", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () async {
+                  Navigator.pop(context); // close the sheet first
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['pdf', 'docx'],
+                  );
+                  if (result != null && result.files.single.path != null) {
+                    setState(() {
+                      onSelected(File(result.files.single.path!));
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 0),
+              ListTile(
+                leading: Icon(Icons.cancel, color: ElementColors.fontColor2),
+                title: Text("Cancel",style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () => Navigator.pop(context), // just close sheet
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
 
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
   final pickedDate = await showCustomDatePicker(context);
@@ -576,6 +660,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (file) => setState(() => dtiCertFile = file),
                         ),
                       ],
                       // S.E.C Certificate (File)
@@ -594,6 +679,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           //   }
                           //   return null;
                           // },
+                          onChanged: (file) => setState(() => secCertFile = file),
                         ),
                       ],
                       // C.D.A Certificate (File)
@@ -612,6 +698,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           //   }
                           //   return null;
                           // },
+                          onChanged: (file) => setState(() => cdaFile = file),
                         ),
                       ],
                       // Prev. Barangay Clearance (Image)
@@ -630,6 +717,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           //   }
                           //   return null;
                           // },
+                          onChanged: (image) => setState(() => barangayClrncImage = image),
                         ),
                       ],
                       // Land Title (File)
@@ -647,6 +735,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (file) => setState(() => landTitleFile = file),
                       ),
                       // Contracts or Agreements (File)
                       const SizedBox(height: 10),
@@ -663,6 +752,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (file) => setState(() => contractsFile = file),
                       ),
                       // Establishment (Image)
                       const SizedBox(height: 10),
@@ -679,6 +769,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (image) => setState(() => establishmentImage = image),
                       ),
                       // Owner (Image)
                       const SizedBox(height: 10),
@@ -695,6 +786,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (image) => setState(() => ownerImage = image),
                       ),
                       // Contracts or Agreements (File)
                       const SizedBox(height: 10),
@@ -711,6 +803,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (file) => setState(() => endorsementFile = file),
                       ),
                       // Signature (Image)
                       const SizedBox(height: 10),
@@ -727,6 +820,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         //   }
                         //   return null;
                         // },
+                        onChanged: (image) => setState(() => signatureImage = image),
                       ),
                     ],
                   ),

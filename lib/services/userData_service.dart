@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // This should match the columns in your 'user_details' Supabase table.
 class UserDetails {
   final String? user_id;
+  final String? signUp_method;
   final String? email;
   final String? lastName;
   final String? firstName;
@@ -33,6 +34,7 @@ class UserDetails {
 
   UserDetails({
     this.user_id,
+    this.signUp_method,
     this.email,
     this.lastName,
     this.firstName,
@@ -62,6 +64,7 @@ class UserDetails {
   factory UserDetails.fromMap(Map<String, dynamic> map) {
     return UserDetails(
       user_id: map['user_id'] as String?,
+      signUp_method: map['signUp_method'] as String?,
       email: map['email'] as String?,
       lastName: map['lastName'] as String?,
       firstName: map['firstName'] as String?,
@@ -92,6 +95,7 @@ class UserDetails {
   // new edited values
   UserDetails copyWith({
     String? user_id,
+    String? signUp_method,
     String? email,
     String? lastName,
     String? firstName,
@@ -121,6 +125,7 @@ class UserDetails {
   {
     return UserDetails(
       user_id: user_id ?? this.user_id,
+      signUp_method: signUp_method ?? this.signUp_method,
       email: email ?? this.email,
       lastName: lastName ?? this.lastName,
       firstName: firstName ?? this.firstName,
@@ -226,6 +231,7 @@ class UserDataService {
     // CONSTRUCT FINAL DATA PAYLOAD with CORRECT keys matching the database
     final Map<String, dynamic> finalProfileData = {
       'user_id': user.id,
+      'signUp_method': initialProfileData['signUp_method'],
       'email': initialProfileData['email'],
       'lastName': initialProfileData['lastName'],
       'firstName': initialProfileData['firstName'],

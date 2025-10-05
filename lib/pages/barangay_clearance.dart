@@ -6,8 +6,8 @@ import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/date_picker.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
-import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/common_widget/pdf_generator.dart'; // pdf widget
+import 'package:elingkod/common_widget/terms_agreement.dart';
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/services/submitRequests_service.dart';
 import 'package:elingkod/services/userData_service.dart';
@@ -222,15 +222,63 @@ class _BarangayClearanceState extends State<BarangayClearance> {
 
   // Pick an image (for Signature)
   Future<void> _pickImage(Function(File) onSelected) async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        onSelected(File(pickedFile.path));
-      });
-    }
-  }
-
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Container(
+        decoration: BoxDecoration(
+          color: ElementColors.primary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: ElementColors.fontColor2),
+                title: Text("Take a photo", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.camera);
+                  if (pickedFile != null) {
+                    setState(() {
+                      onSelected(File(pickedFile.path));
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 0),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: ElementColors.fontColor2),
+                title: Text("Choose from gallery", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? pickedFile =
+                      await _picker.pickImage(source: ImageSource.gallery);
+                  if (pickedFile != null) {
+                    setState(() {
+                      onSelected(File(pickedFile.path));
+                    });
+                  }
+                },
+              ),
+              const Divider(height: 0),
+              ListTile(
+                leading: Icon(Icons.cancel, color: ElementColors.fontColor2),
+                title: Text("Cancel", style: TextStyle(color:ElementColors.fontColor2)),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
   final pickedDate = await showCustomDatePicker(context);
   if (pickedDate != null) {
@@ -677,6 +725,7 @@ void _submitBarangayClearance() async {
                       //   }
                       //   return null;
                       // },
+                      onChanged: (image) => setState(() => signatureImage = image),
                   ),
               ),
 

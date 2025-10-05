@@ -21,6 +21,8 @@ class _ProfileInfoState extends State<ProfileInfo> {
   DateTime? _selectedDate;
   String? _selectedCivilStatus;
   String? _selectedVoterStatus;
+  String? signUp_method;
+
 
   // Initialize the TextEditingControllers
   final TextEditingController email = TextEditingController();
@@ -152,21 +154,30 @@ Widget _buildCivilStatusDropdown() {
     _prefillFromAuth();
   }
 
-  void _prefillFromAuth() {
-    final user = Supabase.instance.client.auth.currentUser;
+void _prefillFromAuth() {
+  final user = Supabase.instance.client.auth.currentUser;
 
-    if (user != null) {
-      // If signed up using email
-      if (user.email != null && user.email!.isNotEmpty) {
-        email.text = user.email!;
+  if (user != null) {
+    // Prefer email if it exists
+    if (user.email != null && user.email!.isNotEmpty) {
+      email.text = user.email!;
+      signUp_method = 'email';
+    } 
+    // Else use phone
+    else if (user.phone != null && user.phone!.isNotEmpty) {
+      // Convert +63XXXXXXXXX → 09XXXXXXXXX
+      String formatPhone = user.phone!;
+      if (formatPhone.startsWith('+63')) {
+        formatPhone = '0' + formatPhone.substring(3);
+      } else if (formatPhone.startsWith('63')) {
+        formatPhone = '0' + formatPhone.substring(2);
       }
-
-      // If signed up using phone
-      if (user.phone != null && user.phone!.isNotEmpty) {
-        contactNumber.text = user.phone!;
-      }
+      contactNumber.text = formatPhone;
+      signUp_method = 'phone';
     }
   }
+}
+
 
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -178,6 +189,7 @@ Widget _buildCivilStatusDropdown() {
   void _navigateToPwdInfo() {
     if (_formKey.currentState!.validate()) {
       final profileData = {
+        'signUp_method': signUp_method,
         'email': email.text,
         'lastName': lastName.text,
         'firstName': firstName.text,
