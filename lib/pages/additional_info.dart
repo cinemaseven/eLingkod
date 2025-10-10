@@ -1,15 +1,13 @@
 import 'dart:io';
-
-import 'package:elingkod/common_style/colors_extension.dart';
+import 'package:flutter/material.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/form_fields.dart';
-import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/pages/home.dart';
-import 'package:elingkod/services/userData_service.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:elingkod/pages/camera_capture.dart';
+import 'package:elingkod/services/supabase_uploads.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:elingkod/common_style/colors_extension.dart';
 
 class AdditionalInfo extends StatefulWidget {
   final Map<String, dynamic> profileData;
@@ -21,131 +19,365 @@ class AdditionalInfo extends StatefulWidget {
 
 class _AdditionalInfoState extends State<AdditionalInfo> {
   final _formKey = GlobalKey<FormState>();
+
+  // yes/no selections
   String? seniorYesOrNo;
-  File? _seniorCardImage;
   String? pwdYesOrNo;
+
+  // captured images
+  File? _seniorCardImage;
   File? _frontPWDImage;
   File? _backPWDImage;
 
-  final TextEditingController pwdIDNum = TextEditingController();
+  // NEW: Save the detected ID type from the camera page (used for verification only)
+  String _seniorDetectedType = 'none';
+  String _pwdDetectedType = 'none';
+
+  // original extracted maps (from camera) - Kept only for ID number
+  Map<String, String> _seniorExtracted = {};
+  Map<String, String> _pwdFrontExtracted = {};
+
+  // editable controllers for inline editing of OCR results - Only for ID Numbers
+  final Map<String, TextEditingController> _seniorControllers = {};
+  final Map<String, TextEditingController> _pwdFrontControllers = {};
+
+  // typed ID numbers (kept for manual entry fallback and main form fields)
   final TextEditingController seniorIDNum = TextEditingController();
-  final ImagePicker _picker = ImagePicker();
-  final UserDataService _userDataService = UserDataService();
+  final TextEditingController pwdIDNum = TextEditingController();
 
-   // Pick an image (for Senior Card / PWD Card)
-  Future<void> _pickImage(Function(File) onSelected) async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        onSelected(File(pickedFile.path));
-      });
-    }
+  final supabase = Supabase.instance.client;
+  bool _isSubmitting = false;
+
+  // helper: accept either String url or Map result from upload helper (KEEP)
+  String? _extractUrl(dynamic uploadResult) {
+    if (uploadResult == null) return null;
+    if (uploadResult is String) return uploadResult;
+    if (uploadResult is Map && uploadResult.containsKey('url'))
+      return uploadResult['url'] as String?;
+    return null;
   }
-  
-  void _createProfile() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    // 1. Validate the form.
-    if (_formKey.currentState!.validate()) {
-      try {
-        // Get ID number, but only if "Yes" is selected. Otherwise, set it to null.
-        final String? seniorIDNumber = (seniorYesOrNo == 'Yes') ? seniorIDNum.text.trim() : null;
-        final String? pwdIDNumber = (pwdYesOrNo == 'Yes') ? pwdIDNum.text.trim() : null;
+  // open camera capture and populate controllers (MODIFIED: SAVES DETECTED TYPE)
+  Future<void> _captureId(String which) async {
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CameraCapturePage(
+          profileData: widget.profileData,
+          onCapture: (file, fields, detectedType) {
+            // Define ONLY the ID key based on the detected type
+            final idKey = detectedType == 'senior' ? 'senior_id_number' : 'pwd_id_number';
+            final allKeys = [idKey];
 
-        // Set images to null if the user selected "No"
-        final File? seniorCardImage = (seniorYesOrNo == 'Yes') ? _seniorCardImage: null;
-        final File? frontPWDImage = (pwdYesOrNo == 'Yes') ? _frontPWDImage : null;
-        final File? backPWDImage = (pwdYesOrNo == 'Yes') ? _backPWDImage : null;
+            if (which == 'senior') {
+              _seniorCardImage = file;
+              _seniorExtracted = Map<String, String>.from(fields);
+              _seniorControllers.clear();
+              _seniorDetectedType = detectedType; // <<< SAVING DETECTED TYPE
 
-        // 3. Call the service to handle data upload, DB upsert, and metadata update
-        await _userDataService.saveCompleteOnboardingProfile(
-          initialProfileData: widget.profileData,
-          seniorYesOrNo: seniorYesOrNo,
-          seniorIDNum: seniorIDNumber,
-          seniorCardImage: seniorCardImage,
-          pwdYesOrNo: pwdYesOrNo,
-          pwdIDNum: pwdIDNumber,
-          frontPWDImage: frontPWDImage,
-          backPWDImage: backPWDImage,
-        );
+              // --- START: ID Comparison/Validation Logic ---
+              final newSeniorID = fields['senior_id_number'] ?? '';
+              final currentSeniorID = seniorIDNum.text.trim();
 
-        // 4. Show success message and navigate to the Home page.
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Profile created successfully!',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.secondary
-          ),
-        );
-        Navigator.of(context).pushReplacement(
-          CustomPageRoute(page: const Home()),
-        );
-      } on AuthException catch (e) {
-        // Handle Supabase Auth errors raised by the service
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("Authentication Error: ${e.message}",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.secondary
-          ),
-        );
-      } on Exception catch (e) {
-        // Catch upload errors, database errors, and custom exceptions raised by the service
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              "Error completing profile: ${e.toString()}",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.secondary
-          ),
-        );
-      } catch (e) {
-        // Catch other general errors
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text("An unexpected error occurred: ${e.toString()}",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.secondary
-          ),
-        );
-      }
-    } else {
-      // If validation fails, show a general error message.
-      scaffoldMessenger.showSnackBar(
+              if (currentSeniorID.isNotEmpty && newSeniorID.isNotEmpty && currentSeniorID != newSeniorID) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        '⚠️ Warning: Scanned Senior ID ($newSeniorID) differs from the existing value ($currentSeniorID). Please verify and correct the field below.'),
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+              // --- END: ID Comparison/Validation Logic ---
+
+              for (var k in allKeys) {
+                _seniorControllers[k] = TextEditingController(text: fields[k] ?? '');
+              }
+            } else if (which == 'pwdFront') {
+              _frontPWDImage = file;
+              _pwdFrontExtracted = Map<String, String>.from(fields);
+              _pwdFrontControllers.clear();
+              _pwdDetectedType = detectedType; // <<< SAVING DETECTED TYPE
+
+              for (var k in allKeys) {
+                if (k == 'pwd_id_number') {
+                  pwdIDNum.text = fields[k] ?? '';
+                }
+                _pwdFrontControllers[k] = TextEditingController(text: fields[k] ?? '');
+              }
+            } else {
+              _backPWDImage = file;
+            }
+          },
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  // Unused helper methods (kept for completeness)
+  bool _ocrContainsKeyword(Map<String, TextEditingController> controllers, String keyword) {
+    final kw = keyword.toLowerCase();
+    final idKey = keyword == 'senior' ? 'senior_id_number' : 'pwd_id_number';
+    if (controllers.containsKey(idKey) && controllers[idKey]!.text.toLowerCase().contains(kw)) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _mapContainsKeyword(Map<String, String> map, String keyword) {
+    final kw = keyword.toLowerCase();
+    for (final v in map.values) {
+      if (v.toLowerCase().contains(kw)) return true;
+    }
+    return false;
+  }
+
+  bool _verifyExtractedWithProfile(Map<String, TextEditingController> controllers) {
+    if (controllers.isEmpty) return true;
+    return true;
+  }
+
+  Future<void> _createProfile() async {
+    final scaffold = ScaffoldMessenger.of(context);
+
+    if (!_formKey.currentState!.validate()) {
+      scaffold.showSnackBar(
         SnackBar(
-          content: Text("Please fill out all required fields.",
-            style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text("Please fill out all required fields.",
+              style: TextStyle(fontWeight: FontWeight.bold)),
           duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.secondary
+          backgroundColor: ElementColors.secondary,
         ),
       );
+      return;
     }
+
+    // --- SENIOR CITIZEN VERIFICATION (TYPE CHECK + STRICT ID MATCH) ---
+    if (seniorYesOrNo == 'Yes') {
+      // 1. Check for Detected ID Type (Replaces Keyword Check)
+      if (_seniorDetectedType != 'senior') {
+        scaffold.showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'ID Type verification failed. Please ensure a Senior Citizen ID is captured.')),
+        );
+        return;
+      }
+
+      final inputSeniorId = seniorIDNum.text.trim();
+      final ocrExtractedId = _seniorControllers['senior_id_number']?.text.trim() ?? _seniorExtracted['senior_id_number'] ?? '';
+
+      // 2. Check for valid OCR extracted ID
+      if (ocrExtractedId.isEmpty) {
+        scaffold.showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Senior ID verification failed: The ID number could not be extracted by OCR. Please ensure the card is clear and the number is entered.')),
+        );
+        return;
+      }
+
+      // 3. Check for ID Number Match (STRICT COMPARISON)
+      if (inputSeniorId != ocrExtractedId) {
+        scaffold.showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Senior ID verification failed: The typed ID number ($inputSeniorId) does not match the scanned ID number ($ocrExtractedId).')),
+        );
+        return;
+      }
+    }
+    // --- END SENIOR CITIZEN VERIFICATION ---
+
+    // --- PWD VERIFICATION (TYPE CHECK) ---
+    if (pwdYesOrNo == 'Yes') {
+      if (_pwdDetectedType != 'pwd') {
+        scaffold.showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'ID Type verification failed. Please ensure a PWD ID is captured.')),
+        );
+        return;
+      }
+    }
+    // --- END PWD VERIFICATION ---
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      // upload images (KEEP)
+      dynamic uploadedSenior;
+      dynamic uploadedPwdFront;
+      dynamic uploadedPwdBack;
+
+      if (_seniorCardImage != null) {
+        uploadedSenior = await SupabaseUploadService.uploadImage(
+          imageFile: _seniorCardImage!,
+          folderName: 'senior',
+          userId: supabase.auth.currentUser?.id ??
+              widget.profileData['email'] ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+        );
+      }
+
+      if (_frontPWDImage != null) {
+        uploadedPwdFront = await SupabaseUploadService.uploadImage(
+          imageFile: _frontPWDImage!,
+          folderName: 'pwd',
+          userId: supabase.auth.currentUser?.id ??
+              widget.profileData['email'] ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+        );
+      }
+
+      if (_backPWDImage != null) {
+        uploadedPwdBack = await SupabaseUploadService.uploadImage(
+          imageFile: _backPWDImage!,
+          folderName: 'pwd',
+          userId: supabase.auth.currentUser?.id ??
+              widget.profileData['email'] ??
+              DateTime.now().millisecondsSinceEpoch.toString(),
+        );
+      }
+
+      final seniorUrl = _extractUrl(uploadedSenior);
+      final pwdFrontUrl = _extractUrl(uploadedPwdFront);
+      final pwdBackUrl = _extractUrl(uploadedPwdBack);
+
+      // Determine final ID values to save
+      String? senior_idnum = seniorIDNum.text.trim().isNotEmpty
+          ? seniorIDNum.text.trim()
+          : null;
+
+      String? pwd_idnum = pwdIDNum.text.trim().isNotEmpty
+          ? pwdIDNum.text.trim()
+          : _pwdFrontExtracted['pwd_id_number'];
+
+
+      // Build insert map matching your schema EXACTLY (from screenshot)
+      final userId = supabase.auth.currentUser?.id;
+      final insertData = {
+        'user_id': userId, // uuid
+        'firstName': widget.profileData['firstName'] ?? '',
+        'lastName': widget.profileData['lastName'] ?? '',
+        'middleName': widget.profileData['middleName'] ?? '',
+        'gender': widget.profileData['gender'] ?? '',
+        'birthDate': widget.profileData['birthDate'] ?? null,
+        'birthPlace': widget.profileData['birthPlace'] ?? '',
+        'houseNum': widget.profileData['houseNum'] ?? '',
+        'street': widget.profileData['street'] ?? '',
+        'city': widget.profileData['city'] ?? '',
+        'province': widget.profileData['province'] ?? '',
+        'zipCode': widget.profileData['zipCode'] ?? '',
+        'contactNumber': widget.profileData['contactNumber'] ?? '',
+        'civilStatus': widget.profileData['civilStatus'] ?? '',
+        'voterStatus': widget.profileData['voterStatus'] ?? '',
+
+        'isPwd': pwdYesOrNo == 'Yes',
+        'pwdIDNum': pwd_idnum ?? null, // <<< CORRECTED KEY (PWDIDNum)
+        'frontPWDImageURL': pwdFrontUrl,
+        'backPWDImageURL': pwdBackUrl,
+
+        'created_at': DateTime.now().toIso8601String(),
+        'email': widget.profileData['email'] ?? '',
+        'citizenship': widget.profileData['citizenship'] ?? '',
+
+        'isSenior': seniorYesOrNo == 'Yes',
+        'seniorCardImageURL': seniorUrl,
+        'age': widget.profileData['age'] ?? '',
+        'seniorIDNum': senior_idnum ?? null, // <<< CORRECTED KEY (seniorIDNum)
+
+        'signUp_method': widget.profileData['signUp_method'] ?? null, // Added missing column
+
+        // Removed non-existent OCR fields from previous step
+      };
+
+      // Best practice: remove null values if the column is NOT nullable in DB
+      // We will only remove nulls unless the key is specifically for a nullable date.
+      insertData.removeWhere((key, value) => value == null && key != 'birthDate');
+
+
+      await supabase.from('user_details').insert([insertData]);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Profile created successfully!')),
+      );
+
+      Navigator.of(context).pushReplacement(CustomPageRoute(page: const Home()));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error completing profile: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  // _previewImage (KEEP)
+  Widget _previewImage(File? f, String label) {
+    if (f == null) return Text('$label: no image yet');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Image.file(f, height: 160),
+      ],
+    );
+  }
+
+  // build inline editable fields from controllers map (MODIFIED: ID ONLY)
+  List<Widget> _buildEditableFields(Map<String, TextEditingController> controllers) {
+    final widgets = <Widget>[];
+    controllers.forEach((key, ctrl) {
+      // Only include ID number fields
+      if (key == 'senior_id_number' || key == 'pwd_id_number') {
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: TextFormField(
+            controller: ctrl,
+            decoration: InputDecoration(
+              labelText: key.replaceAll('_', ' ').toUpperCase(),
+              hintText: 'Correct OCR result here',
+              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            validator: (value) => (value == null || value.isEmpty)
+                ? 'ID number verification required.'
+                : null,
+          ),
+        ));
+      }
+    });
+    return widgets;
+  }
+
+  @override
+  void dispose() {
+    seniorIDNum.dispose();
+    pwdIDNum.dispose();
+    _seniorControllers.forEach((k, c) => c.dispose());
+    _pwdFrontControllers.forEach((k, c) => c.dispose());
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: ElementColors.primary,
-        iconTheme: IconThemeData(color: ElementColors.fontColor2),
       ),
       body: Form(
         key: _formKey,
-        autovalidateMode: AutovalidateMode.disabled,
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
@@ -153,204 +385,131 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                // Back button + title
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: ElementColors.tertiary,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      "Additional Information",
-                      style: TextStyle(
-                        fontSize: media.height * 0.033,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 15, 30, 15),
-                  child: Text(
-                    "Please answer the following question to help us determine your eligibility for senior and PWD-specific benefits and services.",
-                    style: TextStyle(fontSize: media.height * 0.017),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Divider(
-                  color: ElementColors.fontColor1,
-                  thickness: 1,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                // Yes/No senior question
-                const SizedBox(height: 20),
                 RadioButtons(
                   label: 'Are you a senior citizen (60 years old and above)?',
-                  options: ['Yes', 'No'],
-                  onChanged: (value) {
-                    setState(() {
-                      seniorYesOrNo = value;
-                    });
-                  },
+                  options: const ['Yes', 'No'],
+                  onChanged: (value) => setState(() => seniorYesOrNo = value),
                   inline: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please choose either yes or no.";
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? "Please choose yes or no."
+                      : null,
                 ),
-                
-                // Show Senior Card ID Number and Upload ONLY if Yes
-                if (seniorYesOrNo == 'Yes') ...[
-                  const SizedBox(height: 20),
-                  TxtField(
-                    type: TxtFieldType.services,
-                    label: 'Please provide your Senior Citizen ID number:*',
-                    hint: "6 digits ID Number",
-                    controller: seniorIDNum,
-                    keyboardType: TextInputType.text,
-                    validator: (value) {
-                      if (seniorYesOrNo == 'Yes' && (value == null || value.isEmpty)) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
-                  ),
+                if (seniorYesOrNo == 'Yes')
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Please upload a clear, high-resolution photo of your Senior Citizen Card:",
-                        style: TextStyle(fontSize: media.height * 0.017),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child:
-                    UploadImageBox(
-                      label: "Senior Citizen Card",
-                      imageFile: _seniorCardImage, 
-                      onPickFile: () async {
-                        await  _pickImage((file) => _seniorCardImage = file);
-                        return _seniorCardImage;
-                      },
-                      // validator: (imageFile) {
-                      //   if (seniorYesOrNo == 'Yes' && imageFile == null) {
-                      //     return 'Please upload your card..';
-                      //   }
-                      //   return null;
-                      // },
-                    ),
-                  ),
-                ],
-
-                // Yes/No PWD question
-                const SizedBox(height: 20),
-                RadioButtons(
-                  label: 'Are you a registered Person with Disability (PWD) in the Philippines?',
-                  options: ['Yes', 'No'],
-                  onChanged: (value) {
-                    setState(() {
-                      pwdYesOrNo = value;
-                    });
-                  },
-                  inline: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please choose either yes or no.";
-                    }
-                    return null;
-                  },
-                ),
-                //Show PWD ID Number and Card Upload ONLY if Yes
-                if (pwdYesOrNo == 'Yes') ...[
-                  const SizedBox(height: 20),
-                  TxtField(
-                    type: TxtFieldType.services,
-                    label: 'Please provide your PWD ID number:*',
-                    hint: "RR-PPMM-BBB-NNNNNNN",
-                    controller: pwdIDNum,
-                    keyboardType: TextInputType.text,
-                    validator: (value) {
-                      if (pwdYesOrNo == 'Yes' && (value == null || value.isEmpty)) {
-                        return 'This field is required.';
-                      }
-                      return null;
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(30, 40, 30, 15),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Please upload a clear, high-resolution photo of your PWD ID:",
-                        style: TextStyle(fontSize: media.height * 0.017),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        UploadImageBox(
-                          label: "Front PWD ID ",
-                          imageFile: _backPWDImage, 
-                          onPickFile: () async {
-                            await _pickImage((file) => _frontPWDImage = file);
-                            return _frontPWDImage;
-                          },
-                          // validator: (imageFile) {
-                          //   if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                          //     return 'Please upload the front image.';
-                          //   }
-                          //   return null;
-                          // },
+                        TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Senior Citizen ID Number (Manual Input):*',
+                          controller: seniorIDNum,
+                          hint: 'Enter your Senior ID',
+                          validator: (value) =>
+                          (seniorYesOrNo == 'Yes' &&
+                              (value == null || value.isEmpty))
+                              ? 'This field is required.'
+                              : null,
                         ),
-                        const SizedBox(height: 20),
-                        UploadImageBox(
-                          label: "Back PWD ID ",
-                          imageFile: _backPWDImage, 
-                          onPickFile: () async {
-                            await _pickImage((file) => _backPWDImage = file);
-                            return _backPWDImage;
-                          },
-                          // validator: (imageFile) {
-                          //   if (pwdYesOrNo == 'Yes' && imageFile == null) {
-                          //     return 'Please upload the back image.';
-                          //   }
-                          //   return null;
-                          // },
-                        )
+                        const SizedBox(height: 12),
+                        Buttons(
+                          title: "Capture Senior Citizen ID (Front)",
+                          type: BtnType.secondary,
+                          height: 45,
+                          onClick: () => _captureId('senior'),
+                        ),
+                        const SizedBox(height: 8),
+                        _previewImage(_seniorCardImage, 'Senior ID'),
+                        // Show type status for user feedback
+                        Text('Status: ID Type Detected: ${_seniorDetectedType.toUpperCase()}',
+                            style: TextStyle(color: _seniorDetectedType == 'senior' ? Colors.green : Colors.red)),
+                        const SizedBox(height: 8),
+                        // editable extracted fields inline (ID ONLY)
+                        if (_seniorControllers.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Column(
+                              children: [
+                                const Text('OCR Result (Verify/Correct ID Number)', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 6),
+                                ..._buildEditableFields(_seniorControllers),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                ],
+                const SizedBox(height: 20),
+                RadioButtons(
+                  label: 'Are you a registered Person with Disability (PWD)?',
+                  options: const ['Yes', 'No'],
+                  onChanged: (value) => setState(() => pwdYesOrNo = value),
+                  inline: true,
+                  validator: (value) =>
+                  (value == null || value.isEmpty)
+                      ? "Please choose yes or no."
+                      : null,
+                ),
+                if (pwdYesOrNo == 'Yes')
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        TxtField(
+                          type: TxtFieldType.services,
+                          label: 'PWD ID Number:*',
+                          controller: pwdIDNum,
+                          hint: 'Enter your PWD ID',
+                          validator: (value) =>
+                          (pwdYesOrNo == 'Yes' &&
+                              (value == null || value.isEmpty))
+                              ? 'This field is required.'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        Buttons(
+                          title: "Capture Front PWD ID",
+                          type: BtnType.secondary,
+                          height: 45,
+                          onClick: () => _captureId('pwdFront'),
+                        ),
+                        const SizedBox(height: 8),
+                        _previewImage(_frontPWDImage, 'PWD Front'),
+                        // Show type status for user feedback
+                        Text('Status: ID Type Detected: ${_pwdDetectedType.toUpperCase()}',
+                            style: TextStyle(color: _pwdDetectedType == 'pwd' ? Colors.green : Colors.red)),
+                        const SizedBox(height: 8),
+                        if (_pwdFrontControllers.isNotEmpty)
+                          Column(
+                            children: [
+                              const Text('OCR Result (Verify/Correct ID Number)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ..._buildEditableFields(_pwdFrontControllers),
+                            ],
+                          ),
+
+                        const SizedBox(height: 12),
+                        Buttons(
+                          title: "Capture Back PWD ID (Optional)",
+                          type: BtnType.secondary,
+                          height: 45,
+                          onClick: () => _captureId('pwdBack'),
+                        ),
+                        const SizedBox(height: 8),
+                        _previewImage(_backPWDImage, 'PWD Back'),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 40),
                 SizedBox(
                   width: media.width * 0.5,
                   child: Buttons(
-                    title: "Create Profile",
+                    title: _isSubmitting ? "Saving..." : "Create Profile",
                     type: BtnType.secondary,
                     fontSize: 16,
                     height: 45,
-                    onClick: _createProfile,
+                    onClick: () {
+                      if (_isSubmitting) return; // prevents multiple taps
+                      _createProfile(); // triggers your async function
+                    },
                   ),
                 ),
               ],
