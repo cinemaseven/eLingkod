@@ -186,7 +186,7 @@ void _prefillFromAuth() {
     return null;
   }
 
-  void _navigateToPwdInfo() {
+  void _navigateToAdditionalInfo() {
     if (_formKey.currentState!.validate()) {
       final profileData = {
         'signUp_method': signUp_method,
@@ -511,7 +511,7 @@ void _prefillFromAuth() {
                     type: BtnType.secondary,
                     fontSize: 16,
                     height: 45,
-                    onClick: _navigateToPwdInfo,
+                    onClick: _navigateToAdditionalInfo,
                   ),
                 ),
               ],

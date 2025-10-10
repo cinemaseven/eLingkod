@@ -2,11 +2,12 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
+
 import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img_pkg;
 import 'package:path_provider/path_provider.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 /// CameraCapturePage
 /// onCapture: `(File capturedImage, Map<String,String> extractedFields, String detectedType)`
@@ -250,99 +251,186 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
 // --------------------------------------------------
 // 🔹 Camera Stream & Processing (UPDATED FOR TIMEOUT)
 // --------------------------------------------------
+  // void _startImageStream() {
+  //   if (_controller == null || _controller!.value.isStreamingImages) return;
+
+  //   _controller!.startImageStream((CameraImage image) async {
+  //     if (_isProcessing) return;
+  //     _isProcessing = true;
+
+  //     try {
+  //       final file = await _convertCameraImageToFile(image);
+  //       final bytes = await file.readAsBytes();
+  //       final qualityOk = await _isFrameQualityGood(bytes);
+
+  //       // ⏱️ Check for timeout
+  //       final elapsed = DateTime.now().difference(_startTime!).inSeconds;
+  //       bool isTimeout = elapsed > _timeoutSeconds;
+
+
+  //       if (qualityOk) {
+  //         final recognizedText = await _runTextRecognition(file);
+  //         final detected = _detectIdType(recognizedText);
+
+  //         final extracted = detected == 'senior'
+  //             ? extractSeniorIdFields(recognizedText)
+  //             : _extractFieldsFromText(recognizedText);
+
+  //         if(mounted){
+  //           setState(() {
+  //             _isGoodFrame = true;
+  //             _detectedType = detected;
+
+  //             if (_detectedType != 'none') {
+  //               // Reset timeout on success
+  //               _isWrongIdTimeout = false;
+  //               _consecutiveGoodFrames++;
+                
+  //               _lastSavedFile = file;
+  //               _extractedFields = extracted;
+  //               // Since we successfully detected the type, we restart the timer
+  //               // for the next capture sequence, but it's not strictly necessary
+  //               // as the capture completes right after.
+  //             } else if (isTimeout) {
+  //               // Detected a frame with text, but couldn't identify ID type and timed out
+  //               _isWrongIdTimeout = true;
+  //               _consecutiveGoodFrames = 0;
+  //               _extractedFields = {};
+  //             } else {
+  //               // Still within the time limit, reset consecutive frames
+  //               _consecutiveGoodFrames = 0;
+  //               _extractedFields = {};
+  //             }
+  //           });
+  //         }
+  //       } else {
+  //         // Bad frame quality, only check for timeout
+  //         if(mounted){
+  //           setState(() {
+  //             _isGoodFrame = false;
+  //             _consecutiveGoodFrames = 0;
+  //             _detectedType = 'none';
+  //             _extractedFields = {}; // Clear fields on bad frame
+
+  //             if (isTimeout && !_isWrongIdTimeout) {
+  //               // Only set timeout state if we haven't already
+  //               _isWrongIdTimeout = true;
+  //             }
+  //           });
+  //         }
+  //       }
+
+  //       // ⏱️ If a successful ID type is detected, reset timeout tracker.
+  //       if (_detectedType != 'none') {
+  //         _startTime = DateTime.now();
+  //         _isWrongIdTimeout = false;
+  //       }
+
+
+  //       // Final check to capture
+  //       if (_consecutiveGoodFrames >= _requiredGoodFrames &&
+  //           _lastSavedFile != null &&
+  //           _detectedType != 'none') {
+  //         await _controller?.stopImageStream();
+  //         if (!mounted) return;
+  //         widget.onCapture(_lastSavedFile!, _extractedFields, _detectedType);
+  //         // Auto-capture completes and navigates back
+  //         Navigator.pop(context);
+  //       }
+  //     } catch (e) {
+  //       debugPrint('Stream processing error: $e');
+  //     } finally {
+  //       await Future.delayed(Duration(milliseconds: frameDelayMs));
+  //       _isProcessing = false;
+  //     }
+  //   });
+  // }
+
   void _startImageStream() {
-    if (_controller == null || _controller!.value.isStreamingImages) return;
+  if (_controller == null || _controller!.value.isStreamingImages) return;
 
-    _controller!.startImageStream((CameraImage image) async {
-      if (_isProcessing) return;
-      _isProcessing = true;
+  _controller!.startImageStream((CameraImage image) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
 
-      try {
-        final file = await _convertCameraImageToFile(image);
-        final bytes = await file.readAsBytes();
-        final qualityOk = await _isFrameQualityGood(bytes);
+    try {
+      final file = await _convertCameraImageToFile(image);
+      final bytes = await file.readAsBytes();
+      final qualityOk = await _isFrameQualityGood(bytes);
 
-        // ⏱️ Check for timeout
-        final elapsed = DateTime.now().difference(_startTime!).inSeconds;
-        bool isTimeout = elapsed > _timeoutSeconds;
+      // ⏱️ Check for timeout
+      final elapsed = DateTime.now().difference(_startTime!).inSeconds;
+      bool isTimeout = elapsed > _timeoutSeconds;
 
+      if (qualityOk) {
+        final recognizedText = await _runTextRecognition(file);
+        final detected = _detectIdType(recognizedText);
 
-        if (qualityOk) {
-          final recognizedText = await _runTextRecognition(file);
-          final detected = _detectIdType(recognizedText);
+        final extracted = detected == 'senior'
+            ? extractSeniorIdFields(recognizedText)
+            : _extractFieldsFromText(recognizedText);
 
-          final extracted = detected == 'senior'
-              ? extractSeniorIdFields(recognizedText)
-              : _extractFieldsFromText(recognizedText);
+        if (mounted) {
+          setState(() async {
+            _isGoodFrame = true;
+            _detectedType = detected;
 
-          if(mounted){
-            setState(() {
-              _isGoodFrame = true;
-              _detectedType = detected;
-
-              if (_detectedType != 'none') {
-                // Reset timeout on success
-                _isWrongIdTimeout = false;
-                _consecutiveGoodFrames++;
-                _lastSavedFile = file;
-                _extractedFields = extracted;
-                // Since we successfully detected the type, we restart the timer
-                // for the next capture sequence, but it's not strictly necessary
-                // as the capture completes right after.
-              } else if (isTimeout) {
-                // Detected a frame with text, but couldn't identify ID type and timed out
-                _isWrongIdTimeout = true;
-                _consecutiveGoodFrames = 0;
-                _extractedFields = {};
-              } else {
-                // Still within the time limit, reset consecutive frames
-                _consecutiveGoodFrames = 0;
-                _extractedFields = {};
+            if (_detectedType != 'none') {
+              // 🧹 Delete the previous file before saving the new one
+              if (_lastSavedFile != null && await _lastSavedFile!.exists()) {
+                try {
+                  await _lastSavedFile!.delete();
+                  debugPrint('Deleted previous capture: ${_lastSavedFile!.path}');
+                } catch (e) {
+                  debugPrint('Could not delete previous file: $e');
+                }
               }
-            });
-          }
-        } else {
-          // Bad frame quality, only check for timeout
-          if(mounted){
-            setState(() {
-              _isGoodFrame = false;
+
+              // Reset timeout on success
+              _isWrongIdTimeout = false;
+              _consecutiveGoodFrames++;
+
+              _lastSavedFile = file;
+              _extractedFields = extracted;
+              // Since we successfully detected the type, we restart the timer
+              // for the next capture sequence, but it's not strictly necessary
+              // as the capture completes right after.
+            } else if (isTimeout) {
+              // Detected a frame with text, but couldn't identify ID type and timed out
+              _isWrongIdTimeout = true;
               _consecutiveGoodFrames = 0;
-              _detectedType = 'none';
-              _extractedFields = {}; // Clear fields on bad frame
-
-              if (isTimeout && !_isWrongIdTimeout) {
-                // Only set timeout state if we haven't already
-                _isWrongIdTimeout = true;
-              }
-            });
-          }
+              _extractedFields = {};
+            } else {
+              // Still within the time limit, reset consecutive frames
+              _consecutiveGoodFrames = 0;
+              _extractedFields = {};
+            }
+          });
         }
+      } else {
+        // Bad frame quality, only check for timeout
+        if (mounted) {
+          setState(() {
+            _isGoodFrame = false;
+            _consecutiveGoodFrames = 0;
+            _detectedType = 'none';
+            _extractedFields = {}; // Clear fields on bad frame
 
-        // ⏱️ If a successful ID type is detected, reset timeout tracker.
-        if (_detectedType != 'none') {
-          _startTime = DateTime.now();
-          _isWrongIdTimeout = false;
+            if (isTimeout && !_isWrongIdTimeout) {
+              // Only set timeout state if we haven't already
+              _isWrongIdTimeout = true;
+            }
+          });
         }
-
-
-        // Final check to capture
-        if (_consecutiveGoodFrames >= _requiredGoodFrames &&
-            _lastSavedFile != null &&
-            _detectedType != 'none') {
-          await _controller?.stopImageStream();
-          if (!mounted) return;
-          widget.onCapture(_lastSavedFile!, _extractedFields, _detectedType);
-          // Auto-capture completes and navigates back
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        debugPrint('Stream processing error: $e');
-      } finally {
-        await Future.delayed(Duration(milliseconds: frameDelayMs));
-        _isProcessing = false;
       }
-    });
-  }
+    } catch (e) {
+      debugPrint('Error in image stream: $e');
+    } finally {
+      _isProcessing = false;
+    }
+  });
+}
+
 
 // --- Helper Functions (Conversion, Quality, OCR) - Kept as is ---
 
