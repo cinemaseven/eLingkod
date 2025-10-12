@@ -371,16 +371,16 @@ class SubmitRequestService {
       final residencyUrl = results[1];
       final signatureUrl = results[2];
 
-      // // Ensure all uploads succeeded
-      // if (validIdUrl == null) {
-      //   throw Exception("Failed to upload Valid ID image.");
-      // }
-      // if (residencyUrl == null) {
-      //   throw Exception("Failed to upload Proof of Residency image.");
-      // }
-      // if (signatureUrl == null) {
-      //   throw Exception("Failed to upload Signature image.");
-      // }
+      // Ensure all uploads succeeded
+      if (validIdUrl == null) {
+        throw Exception("Failed to upload Valid ID image.");
+      }
+      if (residencyUrl == null) {
+        throw Exception("Failed to upload Proof of Residency image.");
+      }
+      if (signatureUrl == null) {
+        throw Exception("Failed to upload Signature image.");
+      }
 
       // --- 2. CONSTRUCT AND SUBMIT DATA ---
       final request = BarangayIDRequest(

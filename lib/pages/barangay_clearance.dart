@@ -279,6 +279,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
     },
   );
 }
+
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
   final pickedDate = await showCustomDatePicker(context);
   if (pickedDate != null) {
@@ -719,12 +720,12 @@ void _submitBarangayClearance() async {
                       await _pickImage((file) => signatureImage = file);
                       return signatureImage;
                     },
-                    // validator: (imageFile) {
-                      //   if (imageFile == null) {
-                      //     return 'Please upload your signature over printed name.';
-                      //   }
-                      //   return null;
-                      // },
+                    validator: (imageFile) {
+                        if (imageFile == null) {
+                          return 'Please upload your signature over printed name.';
+                        }
+                        return null;
+                      },
                       onChanged: (image) => setState(() => signatureImage = image),
                   ),
               ),

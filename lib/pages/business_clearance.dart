@@ -654,12 +654,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                         await _pickFile((file) => dtiCertFile = file);
                         return dtiCertFile;
                         },
-                        // validator: (file) {
-                        //   if (file == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (file) {
+                          if (file == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (file) => setState(() => dtiCertFile = file),
                         ),
                       ],
@@ -673,12 +673,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                               await _pickFile((file) => secCertFile = file);
                               return secCertFile;
                           },
-                          // validator: (file) {
-                          //   if (file == null) {
-                          //     return 'Please upload the required file.';
-                          //   }
-                          //   return null;
-                          // },
+                          validator: (file) {
+                            if (file == null) {
+                              return 'Please upload the required file.';
+                            }
+                            return null;
+                          },
                           onChanged: (file) => setState(() => secCertFile = file),
                         ),
                       ],
@@ -692,12 +692,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                               await _pickFile((file) => cdaFile = file);
                               return cdaFile;
                           },
-                          // validator: (file) {
-                          //   if (file == null) {
-                          //     return 'Please upload the required file.';
-                          //   }
-                          //   return null;
-                          // },
+                          validator: (file) {
+                            if (file == null) {
+                              return 'Please upload the required file.';
+                            }
+                            return null;
+                          },
                           onChanged: (file) => setState(() => cdaFile = file),
                         ),
                       ],
@@ -711,12 +711,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                             await  _pickImage((file) => barangayClrncImage = file);
                             return barangayClrncImage;
                           },
-                          // validator: (imageFile) {
-                          //   if (imageFile == null) {
-                          //     return 'Please upload the required file.';
-                          //   }
-                          //   return null;
-                          // },
+                          validator: (imageFile) {
+                            if (imageFile == null) {
+                              return 'Please upload the required file.';
+                            }
+                            return null;
+                          },
                           onChanged: (image) => setState(() => barangayClrncImage = image),
                         ),
                       ],
@@ -729,12 +729,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           await  _pickFile((file) => landTitleFile = file);
                           return landTitleFile;
                         },
-                        // validator: (file) {
-                        //   if (file == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (file) {
+                          if (file == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (file) => setState(() => landTitleFile = file),
                       ),
                       // Contracts or Agreements (File)
@@ -746,12 +746,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           await  _pickFile((file) => contractsFile = file);
                           return contractsFile;
                         },
-                        // validator: (file) {
-                        //   if (file == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (file) {
+                          if (file == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (file) => setState(() => contractsFile = file),
                       ),
                       // Establishment (Image)
@@ -763,12 +763,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           await  _pickImage((file) => establishmentImage = file);
                           return establishmentImage;
                         },
-                        // validator: (imageFile) {
-                        //   if (imageFile == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (imageFile) {
+                          if (imageFile == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (image) => setState(() => establishmentImage = image),
                       ),
                       // Owner (Image)
@@ -780,12 +780,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           await  _pickImage((file) => ownerImage = file);
                           return ownerImage;
                         },
-                        // validator: (imageFile) {
-                        //   if (imageFile == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (imageFile) {
+                          if (imageFile == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (image) => setState(() => ownerImage = image),
                       ),
                       // Contracts or Agreements (File)
@@ -797,12 +797,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                             await _pickFile((file) => endorsementFile = file);
                             return endorsementFile;
                         },
-                        // validator: (file) {
-                        //   if (file == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (file) {
+                          if (file == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (file) => setState(() => endorsementFile = file),
                       ),
                       // Signature (Image)
@@ -814,12 +814,12 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                           await  _pickImage((file) => signatureImage = file);
                           return signatureImage;
                         },
-                        // validator: (imageFile) {
-                        //   if (imageFile == null) {
-                        //     return 'Please upload the required file.';
-                        //   }
-                        //   return null;
-                        // },
+                        validator: (imageFile) {
+                          if (imageFile == null) {
+                            return 'Please upload the required file.';
+                          }
+                          return null;
+                        },
                         onChanged: (image) => setState(() => signatureImage = image),
                       ),
                     ],

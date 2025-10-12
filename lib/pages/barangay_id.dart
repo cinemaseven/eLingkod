@@ -129,7 +129,7 @@ class _BarangayIDState extends State<BarangayID> {
     return null;
   }
   // Pick an image (for Valid ID / Proof of Residency / Signature)
- Future<void> _pickImage(Function(File) onSelected) async {
+Future<void> _pickImage(Function(File) onSelected) async {
   showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -321,7 +321,7 @@ void _submitBarangayID() async {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                       ElevatedButton.icon(
+                      ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ElementColors.tertiary,
                           foregroundColor: Colors.white,
@@ -602,12 +602,12 @@ void _submitBarangayID() async {
                         await _pickImage((file) => validIdImage = file);
                         return validIdImage;
                       },
-                      // validator: (imageFile) {
-                      //   if (imageFile == null) {
-                      //     return 'Please upload a valid ID.';
-                      //   }
-                      //   return null;
-                      // },
+                      validator: (imageFile) {
+                        if (imageFile == null) {
+                          return 'Please upload a valid ID.';
+                        }
+                        return null;
+                      },
                       onChanged: (image) => setState(() => validIdImage = image),
                     ),
                     // Proof of Residency
@@ -618,12 +618,12 @@ void _submitBarangayID() async {
                         await _pickImage((file) => residencyImage = file);
                         return residencyImage;
                       },
-                      // validator: (imageFile) {
-                      //   if (imageFile == null) {
-                      //     return 'Please upload your proof of residency.';
-                      //   }
-                      //   return null;
-                      // },
+                      validator: (imageFile) {
+                        if (imageFile == null) {
+                          return 'Please upload your proof of residency.';
+                        }
+                        return null;
+                      },
                       onChanged: (image) => setState(() => residencyImage = image),
                     ),
                     // Signature
@@ -634,12 +634,12 @@ void _submitBarangayID() async {
                         await _pickImage((file) => signatureImage = file);
                         return signatureImage;
                       },
-                      // validator: (imageFile) {
-                      //   if (imageFile == null) {
-                      //     return 'Please upload your signature over printed name.';
-                      //   }
-                      //   return null;
-                      // },
+                      validator: (imageFile) {
+                        if (imageFile == null) {
+                          return 'Please upload your signature over printed name.';
+                        }
+                        return null;
+                      },
                       onChanged: (image) => setState(() => signatureImage = image),
                     ),
                   ],

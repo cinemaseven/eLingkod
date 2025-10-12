@@ -421,7 +421,7 @@ Future<void> _createProfile() async {
                       children: [
                         TxtField(
                           type: TxtFieldType.services,
-                          label: 'PWD ID Number:*',
+                          label: 'PWD ID Number (Manual Input):*',
                           controller: pwdIDNum,
                           hint: 'Enter your PWD ID',
                           validator: (value) =>
@@ -460,6 +460,17 @@ Future<void> _createProfile() async {
                         ),
                         const SizedBox(height: 8),
                         _previewImage(_backPWDImage, 'PWD Back'),
+                         // Show type status for user feedback
+                        Text('Status: ID Type Detected: ${_pwdDetectedType.toUpperCase()}',
+                            style: TextStyle(color: _pwdDetectedType == 'pwd' ? Colors.green : Colors.red)),
+                        const SizedBox(height: 8),
+                        if (_pwdFrontControllers.isNotEmpty)
+                          Column(
+                            children: [
+                              const Text('OCR Result (Verify/Correct ID Number)', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ..._buildEditableFields(_pwdFrontControllers),
+                            ],
+                          ),
                       ],
                     ),
                   ),
