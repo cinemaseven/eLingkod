@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:flutter/material.dart';
 
-class UploadImageBox extends StatelessWidget {
+class UploadImageBox extends StatefulWidget {
   final String? label;
   final File? imageFile;
   final Future<File?> Function()? onPickFile;
@@ -24,18 +24,42 @@ class UploadImageBox extends StatelessWidget {
   });
 
   @override
+  State<UploadImageBox> createState() => _UploadImageBoxState();
+}
+
+class _UploadImageBoxState extends State<UploadImageBox> {
+  File? _currentFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFile = widget.imageFile;
+  }
+
+  @override
+  void didUpdateWidget(covariant UploadImageBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.imageFile != oldWidget.imageFile) {
+      _currentFile = widget.imageFile;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FormField<File>(
-      validator: validator,
-      onSaved: onSaved,
-      autovalidateMode: autovalidateMode,
-      initialValue: imageFile,
+      validator: widget.validator,
+      onSaved: widget.onSaved,
+      autovalidateMode: widget.autovalidateMode,
+      initialValue: _currentFile,
       builder: (FormFieldState<File> state) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (label != null) ...[
-              Text(label!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            if (widget.label != null) ...[
+              Text(
+                widget.label!,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              ),
               const SizedBox(height: 8),
             ],
 
@@ -43,10 +67,11 @@ class UploadImageBox extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    final picked = await onPickFile?.call();
+                    final picked = await widget.onPickFile?.call();
                     if (picked != null) {
+                      setState(() => _currentFile = picked);
                       state.didChange(picked);
-                      onChanged?.call(picked);
+                      widget.onChanged?.call(picked);
                     }
                   },
                   child: Container(
@@ -64,28 +89,32 @@ class UploadImageBox extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // 🟢 Show file name instead of image preview
-                    child: state.value != null
-                        ? Center(
-                            child: Text(
-                              state.value!.path.split('/').last,
-                              style: const TextStyle(color: Colors.black87),
-                              textAlign: TextAlign.center,
+                    child: _currentFile != null
+                      ? Center(
+                          child: Text(
+                            _currentFile!.path.split('/').last, // 👈 show file name only
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text("Upload Photo", style: TextStyle(color: Colors.black54)),
-                            ],
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text("Upload Photo", style: TextStyle(color: Colors.black54)),
+                          ],
+                        ),
                   ),
                 ),
 
                 // ❌ Remove image button
-                if (state.value != null)
+                if (_currentFile != null)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -95,7 +124,10 @@ class UploadImageBox extends StatelessWidget {
                           context: context,
                           builder: (context) => AlertDialog(
                             backgroundColor: ElementColors.primary,
-                            title: Text("Remove image", style: TextStyle(color: ElementColors.fontColor2)),
+                            title: Text(
+                              "Remove image",
+                              style: TextStyle(color: ElementColors.fontColor2),
+                            ),
                             content: Text(
                               "Are you sure you want to remove this image?",
                               style: TextStyle(color: ElementColors.fontColor2),
@@ -114,8 +146,9 @@ class UploadImageBox extends StatelessWidget {
                         );
 
                         if (confirm == true) {
+                          setState(() => _currentFile = null);
                           state.didChange(null);
-                          onChanged?.call(null);
+                          widget.onChanged?.call(null);
                         }
                       },
                       child: Container(
@@ -159,14 +192,14 @@ class UploadImageBox extends StatelessWidget {
 }
 
 
-class UploadFileBox extends StatelessWidget {
+class UploadFileBox extends StatefulWidget {
   final String? label;
   final File? file;
   final Future<File?> Function()? onPickFile;
   final FormFieldValidator<File>? validator;
   final FormFieldSetter<File>? onSaved;
   final AutovalidateMode autovalidateMode;
-  final void Function(File?)? onChanged; // ✅ NEW
+  final void Function(File?)? onChanged;
 
   const UploadFileBox({
     super.key,
@@ -176,22 +209,44 @@ class UploadFileBox extends StatelessWidget {
     this.validator,
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
-    this.onChanged, // ✅ NEW
+    this.onChanged,
   });
+
+  @override
+  State<UploadFileBox> createState() => _UploadFileBoxState();
+}
+
+class _UploadFileBoxState extends State<UploadFileBox> {
+  File? _currentFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFile = widget.file;
+  }
+
+  @override
+  void didUpdateWidget(covariant UploadFileBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.file != oldWidget.file) {
+      _currentFile = widget.file;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return FormField<File>(
-      validator: validator,
-      onSaved: onSaved,
-      autovalidateMode: autovalidateMode,
-      initialValue: file,
+      validator: widget.validator,
+      onSaved: widget.onSaved,
+      autovalidateMode: widget.autovalidateMode,
+      initialValue: _currentFile,
       builder: (FormFieldState<File> state) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (label != null) ...[
-              Text(label!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            if (widget.label != null) ...[
+              Text(widget.label!,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
               const SizedBox(height: 8),
             ],
 
@@ -199,10 +254,11 @@ class UploadFileBox extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    final picked = await onPickFile?.call();
+                    final picked = await widget.onPickFile?.call();
                     if (picked != null) {
+                      setState(() => _currentFile = picked);
                       state.didChange(picked);
-                      onChanged?.call(picked); // ✅ sync with parent
+                      widget.onChanged?.call(picked);
                     }
                   },
                   child: Container(
@@ -220,12 +276,16 @@ class UploadFileBox extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: state.value != null
+                    child: _currentFile != null
                         ? Center(
                             child: Text(
-                              state.value!.path.split('/').last,
-                              style: const TextStyle(color: Colors.black87),
+                              _currentFile!.path.split('/').last,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
                               textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           )
                         : Column(
@@ -233,14 +293,14 @@ class UploadFileBox extends StatelessWidget {
                             children: const [
                               Icon(Icons.upload_file, size: 40, color: Colors.grey),
                               SizedBox(height: 8),
-                              Text("Upload File", style: TextStyle(color: Colors.black54)),
+                              Text("Upload File",
+                                  style: TextStyle(color: Colors.black54)),
                             ],
                           ),
                   ),
                 ),
 
-                // ✅ Remove button when file exists
-                if (state.value != null)
+                if (_currentFile != null)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -250,24 +310,37 @@ class UploadFileBox extends StatelessWidget {
                           context: context,
                           builder: (context) => AlertDialog(
                             backgroundColor: ElementColors.primary,
-                            title: Text("Remove file", style: TextStyle(color: ElementColors.fontColor2)),
-                            content: Text("Are you sure you want to remove this file?", style: TextStyle(color: ElementColors.fontColor2)),
+                            title: Text("Remove file",
+                                style:
+                                    TextStyle(color: ElementColors.fontColor2)),
+                            content: Text(
+                              "Are you sure you want to remove this file?",
+                              style:
+                                  TextStyle(color: ElementColors.fontColor2),
+                            ),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: Text("No", style: TextStyle(color: ElementColors.fontColor2)),
+                                onPressed: () =>
+                                    Navigator.pop(context, false),
+                                child: Text("No",
+                                    style: TextStyle(
+                                        color: ElementColors.fontColor2)),
                               ),
                               TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: Text("Yes", style: TextStyle(color: ElementColors.fontColor2)),
+                                onPressed: () =>
+                                    Navigator.pop(context, true),
+                                child: Text("Yes",
+                                    style: TextStyle(
+                                        color: ElementColors.fontColor2)),
                               ),
                             ],
                           ),
                         );
 
                         if (confirm == true) {
+                          setState(() => _currentFile = null);
                           state.didChange(null);
-                          onChanged?.call(null); // ✅ clear parent too
+                          widget.onChanged?.call(null);
                         }
                       },
                       child: Container(
@@ -276,7 +349,8 @@ class UploadFileBox extends StatelessWidget {
                           color: Colors.black54,
                         ),
                         padding: const EdgeInsets.all(4),
-                        child: const Icon(Icons.close, color: Colors.white, size: 18),
+                        child: const Icon(Icons.close,
+                            color: Colors.white, size: 18),
                       ),
                     ),
                   ),
