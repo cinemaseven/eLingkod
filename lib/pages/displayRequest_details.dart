@@ -1,22 +1,23 @@
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class DisplayrequestDetails extends StatefulWidget {
+class DisplayRequestDetails extends StatefulWidget {
   final int requestId;
   final String requestType;
 
-  const DisplayrequestDetails({
+  const DisplayRequestDetails({
     super.key,
     required this.requestId,
     required this.requestType,
   });
 
   @override
-  State<DisplayrequestDetails> createState() => _RequestDetailsPageState();
+  State<DisplayRequestDetails> createState() => _RequestDetailsPageState();
 }
 
-class _RequestDetailsPageState extends State<DisplayrequestDetails> {
+class _RequestDetailsPageState extends State<DisplayRequestDetails> {
   final SupabaseClient supabase = Supabase.instance.client;
 
   Map<String, dynamic>? _requestData;
@@ -37,7 +38,7 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
       "province": "Province",
       "zipCode": "Zip Code",
       "idPurpose": "ID Purpose",
-      "validImageURL": "Valid ID",
+      "validIdImageURL": "Valid ID",
       "residencyImageURL": "Proof of Residency",
       "signatureImageURL": "Applicant Signature over Printed Name"
     },
@@ -86,7 +87,7 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
       "barangayClrncImageURL": "Previous Barangay Clearance",
       "landTitleFileURL": "Land Title or Tax Declaration",
       "contractsFileURL": "Duly Notarized Contracts and/or Agreements",
-      "establishmentImageURl": "4R Format Full-View Establishment Picture",
+      "establishmentImageURL": "4R Format Full-View Establishment Picture",
       "ownerImageURL": "2x2 Owner Picture",
       "endorsementFileURL": "Association Endorsement",
       "signatureImageURL": "Applicant Signature over Printed Name"
@@ -128,6 +129,74 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
     });
   }
 
+  // ----------------------------
+  // Show image/file popup with X button
+  // ----------------------------
+void _showFilePopup(String url, {bool isImage = true}) {
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        children: [
+          Center(
+            child: isImage
+                ? InteractiveViewer(
+                    child: Image.network(
+                      url,
+                      errorBuilder: (_, __, ___) =>
+                          const Text("Failed to load image"),
+                    ),
+                  )
+                : GestureDetector(
+                  onTap: () async {
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(Uri.parse(url));
+                    }
+                  },
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: "Open file in browser? ",
+                          style: TextStyle(
+                            color: ElementColors.fontColor2,
+                            fontSize: 20,
+                          ),
+                        ),
+                        TextSpan(
+                          text: "\n\nOpen",
+                          style: TextStyle(
+                            color: ElementColors.fontColor2,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            decoration: TextDecoration.underline, // Underlined
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+  // ----------------------------
+  // Build request detail fields
+  // ----------------------------
   @override
   Widget build(BuildContext context) {
     final labels = fieldLabels[widget.requestType];
@@ -163,12 +232,12 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     ...labels!.entries.map((field) {
                       final key = field.key;
                       final label = field.value;
                       final value = _requestData![key];
 
+                      // Conditional fields
                       if (widget.requestType == "barangay_clearance_request") {
                         if (key == "lengthStay" &&
                             _requestData!["residencyType"] != "rent") {
@@ -180,8 +249,7 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
                         final ownership = _requestData!["ownershipType"];
                         final appType = _requestData!["appType"];
 
-                        if (key == "dtiCertFileURL" &&
-                            ownership != "Single Proprietor") {
+                        if (key == "dtiCertFileURL" && ownership != "Single Proprietor") {
                           return const SizedBox.shrink();
                         }
                         if (key == "secCertFileURL" &&
@@ -192,19 +260,21 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
                         if (key == "cdaFileURL" && ownership != "Cooperative") {
                           return const SizedBox.shrink();
                         }
-                        if (key == "barangayClrncImageURL" &&
-                            appType != "Renewal Application") {
+                        if (key == "barangayClrncImageURL" && appType != "Renewal Application") {
                           return const SizedBox.shrink();
                         }
                       }
 
                       String displayValue;
                       if (key == "idPurpose" && value is List) {
-                        displayValue =
-                            value.map((e) => e.toString()).join(", ");
+                        displayValue = value.map((e) => e.toString()).join(", ");
                       } else {
                         displayValue = value?.toString() ?? "";
                       }
+
+                      // Determine if it's a file/image field
+                      bool isFileField =
+                          key.toLowerCase().contains("url") && value != null && value.toString().isNotEmpty;
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,14 +299,40 @@ class _RequestDetailsPageState extends State<DisplayrequestDetails> {
                                   color: ElementColors.shadow.withOpacity(0.3),
                                   offset: const Offset(0, 2),
                                   blurRadius: 6,
-                                  spreadRadius: 1, 
+                                  spreadRadius: 1,
                                 ),
                               ],
                             ),
-                            child: Text(
-                              displayValue,
-                              style: const TextStyle(fontSize: 15),
-                            ),
+                            child: isFileField
+                                ? Align(
+                                    alignment: Alignment.center,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        String fileUrl = value.toString();
+
+                                        // Use signed URL if private bucket
+                                        if (fileUrl.startsWith("private")) {
+                                          final signed = await supabase.storage
+                                              .from('your-bucket-name')
+                                              .createSignedUrl(fileUrl, 60);
+                                          fileUrl = signed;
+                                        }
+
+                                        final isImage = fileUrl.toLowerCase().endsWith(".jpg") ||
+                                            fileUrl.toLowerCase().endsWith(".jpeg") ||
+                                            fileUrl.toLowerCase().endsWith(".png");
+                                        _showFilePopup(fileUrl, isImage: isImage);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ElementColors.secondary,
+                                      ),
+                                      child: Text("View", style: TextStyle(color: ElementColors.fontColor2),),
+                                    ),
+                                  )
+                                : Text(
+                                    displayValue,
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
                           ),
                         ],
                       );
