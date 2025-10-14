@@ -171,7 +171,7 @@ void _showFilePopup(String url, {bool isImage = true}) {
                             color: ElementColors.fontColor2,
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
-                            decoration: TextDecoration.underline, // Underlined
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ],
@@ -310,13 +310,29 @@ void _showFilePopup(String url, {bool isImage = true}) {
                                       onPressed: () async {
                                         String fileUrl = value.toString();
 
-                                        // Use signed URL if private bucket
+                                        // Map which bucket to use per request type
+                                        final Map<String, String> bucketMap = {
+                                          "barangay_id_request": "barangay-id-images",
+                                          "barangay_clearance_request": "barangay-clearance-images",
+                                          "business_clearance_request": "business-clearance-images",
+                                        };
+
+                                        // Inside your ElevatedButton onPressed
                                         if (fileUrl.startsWith("private")) {
+                                          final bucketName = bucketMap[widget.requestType] ?? "public";
                                           final signed = await supabase.storage
-                                              .from('your-bucket-name')
+                                              .from(bucketName)
                                               .createSignedUrl(fileUrl, 60);
                                           fileUrl = signed;
                                         }
+
+                                        // // Use signed URL if private bucket
+                                        // if (fileUrl.startsWith("private")) {
+                                        //   final signed = await supabase.storage
+                                        //       .from('your-bucket-name')
+                                        //       .createSignedUrl(fileUrl, 60);
+                                        //   fileUrl = signed;
+                                        // }
 
                                         final isImage = fileUrl.toLowerCase().endsWith(".jpg") ||
                                             fileUrl.toLowerCase().endsWith(".jpeg") ||
