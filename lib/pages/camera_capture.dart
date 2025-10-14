@@ -43,17 +43,28 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
   late final TextRecognizer _textRecognizer;
   final int frameDelayMs = 350;
 
-  // ⏱️ NEW: Timeout State Variables
+  // ⏱️ Timeout State Variables
   DateTime? _startTime;
   bool _isWrongIdTimeout = false;
-  final int _timeoutSeconds = 8;
+  final int _timeoutSeconds = 8; // keep 8s as requested
+
+  // 🆕 NEW: Determine if this capture is for the PWD Back ID
+  late final bool _isPwdBackCapture;
+  // 🆕 NEW: Normalized ID number from profile for matching (for PWD Front)
+  late final String _targetPwdIdNum;
 
   @override
   void initState() {
     super.initState();
     _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    // Determine the capture target
+    _isPwdBackCapture = widget.profileData['capture_target'] == 'pwdBack';
+
+    // Normalize target PWD ID by removing all non-numeric/non-dash/non-slash characters
+    String targetId = widget.profileData['pwd_id_number'] ?? '';
+    _targetPwdIdNum = targetId.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim();
+
     _initCamera();
-    // ⏱️ Initialize start time when the screen loads
     _startTime = DateTime.now();
   }
 
@@ -75,46 +86,50 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
 
-      await _controller!.initialize();
+      // Use safe access just in case the initialization fails quickly
+      await _controller?.initialize();
       if (!mounted) return;
 
-      setState(() => _isCameraReady = true);
-      _startImageStream();
+      // Check if initialization was successful before starting stream
+      if (_controller != null && _controller!.value.isInitialized) {
+        setState(() => _isCameraReady = true);
+        _startImageStream();
+      } else {
+        debugPrint('Camera controller failed to initialize.');
+      }
     } catch (e) {
       debugPrint('Camera init error: $e');
     }
   }
 
-// --------------------------------------------------
-// 🔹 Helper: Detect ID Type (KEEP)
-// --------------------------------------------------
-  String _detectIdType(String ocrText) {
-    final text = ocrText.toUpperCase();
-    final normalized = text.replaceAll(RegExp(r'[^A-Z0-9\s]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+  // --------------------------------------------------
+  // 🔹 Helper: Detect ID Type (Kept for Senior and PWD Front initial check)
+  // --------------------------------------------------
+  String _detectIdType(String text) {
+    final normalized = text.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9\s]'), '');
 
+    // Check PWD first
+    if (normalized.contains('PWD') ||
+        normalized.contains('PERSON WITH DISABILITY') ||
+        normalized.contains('DISABILITY')) {
+      return 'pwd';
+    }
+
+    // Senior second
     if (normalized.contains('SENIOR') ||
         normalized.contains('SEN10R') ||
         normalized.contains('CITIZEN') ||
         normalized.contains('OSCA') ||
-        normalized.contains('OFFICE OF THE SENIOR CITIZEN AFFAIRS') ||
-        normalized.contains('REPUBLIC OF THE PHILIPPINES')) {
+        normalized.contains('OFFICE OF THE SENIOR CITIZEN AFFAIRS')) {
       return 'senior';
-    }
-
-    if (normalized.contains('PWD') ||
-        normalized.contains('PERSON WITH DISABILITY') ||
-        normalized.contains('DISABILITY AFFAIRS')) {
-      return 'pwd';
     }
 
     return 'none';
   }
 
-// --------------------------------------------------
-// 🔹 Helper: Extract Senior Citizen ID fields (FIXED FOR SEPARATE LINES)
-// --------------------------------------------------
+  // --------------------------------------------------
+  // 🔹 Helper: Extract Senior Citizen ID fields (UNCHANGED)
+  // --------------------------------------------------
   Map<String, String> extractSeniorIdFields(String ocrText) {
     String? idNum;
 
@@ -132,7 +147,8 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
     for (int i = 0; i < searchScope; i++) {
       final line = lines[i];
       // ID number is strictly [0-9\-\/]
-      final labeledMatch = RegExp(r'(SCN|ID|NO|NUMBER|OSCA|TIN)[\s#:]*([0-9\-\/]{5,25})')
+      final labeledMatch = RegExp(
+          r'(SCN|ID|NO|NUMBER|OSCA|TIN|SENIOR\s*ID|SENIOR\s*NO)[\s#:]*([0-9\-\/]{5,25})')
           .firstMatch(line);
 
       if (labeledMatch != null) {
@@ -141,8 +157,8 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
       }
     }
 
-    // 2. FIX: Check for numeric string followed by ID label on the next line.
-    if (idNum == null || idNum!.length < 5) {
+    // 2. Check for numeric string followed by ID label on the next line.
+    if (idNum == null || idNum.length < 5) {
       idNum = null;
 
       for (int i = 0; i < searchScope; i++) {
@@ -155,16 +171,20 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
           final candidate = numMatch.group(1)!;
 
           // Exclude obvious dates
-          if (RegExp(r'^\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}$').hasMatch(candidate) ||
-              RegExp(r'^(?:19|20)\d{2}$').hasMatch(candidate))
-          {
+          if (RegExp(r'^\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}$')
+              .hasMatch(candidate) ||
+              RegExp(r'^(?:19|20)\d{2}$').hasMatch(candidate)) {
             continue;
           }
 
           // Check the NEXT line for a common ID label
           if (i + 1 < lines.length) {
             final nextLine = lines[i + 1];
-            if (nextLine.contains('SCN') || nextLine.contains('ID NO') || nextLine.contains('NUMBER') || nextLine.contains('OSCA')) {
+            if (nextLine.contains('SCN') ||
+                nextLine.contains('ID NO') ||
+                nextLine.contains('NUMBER') ||
+                nextLine.contains('OSCA') ||
+                nextLine.contains('SENIOR')) {
               idNum = candidate;
               break;
             }
@@ -173,43 +193,11 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
       }
     }
 
-
-    // 3. Fallback (Original Date-Aware Check - If all labeled search failed)
-    if (idNum == null || idNum!.length < 5) {
-      idNum = null;
-
-      for (int i = 0; i < searchScope; i++) {
-        final line = lines[i];
-
-        if (line.contains('DATE') || line.contains('ISSUE') || line.contains('EXPIRY') || line.contains('VALID') || line.contains('BIRTH')) {
-          continue;
-        }
-
-        // Look for a long numeric string
-        final matches = RegExp(r'([0-9\-\/]{8,25})').allMatches(line);
-
-        for (var m in matches) {
-          final candidate = m.group(1)!;
-
-          if (RegExp(r'^\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}$').hasMatch(candidate) ||
-              RegExp(r'^(?:19|20)\d{2}$').hasMatch(candidate)
-          )
-          {
-            continue;
-          }
-
-          idNum = candidate;
-          break;
-        }
-        if (idNum != null) break;
-      }
-    }
-
     // --- Final Cleanup and Validation ---
     if (idNum != null) {
       // Cleanup keeps only digits, dashes, or slashes
-      idNum = idNum!.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim();
-      if (idNum!.length < 5) idNum = null;
+      idNum = idNum.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim();
+      if (idNum.length < 5) idNum = null;
     }
 
     return {
@@ -217,71 +205,122 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
     };
   }
 
-// --------------------------------------------------
-// 🔹 Helper: Extract general/PWD fields (STRICT NUMERIC)
-// --------------------------------------------------
-  Map<String, String> _extractFieldsFromText(String recognizedText) {
-    final lower = recognizedText.toLowerCase();
+  // --------------------------------------------------
+  // 🔹 Helper: Extract PWD ID fields (Strict PWD ID Only)
+  // --------------------------------------------------
+  Map<String, String> _extractPwdIdFields(String recognizedText) {
+    String? pwdIdNum;
 
-    Map<String, String> out = {};
+    // 1️⃣ PWD ID Number
+    // Pattern captures strictly [0-9\-\/] and looks for common labels
+    final idMatch = RegExp(
+      r'(?:ID|PWD|NO|NUMBER|PWD\.? NO\.?|PWD NO)[:\s#]*([0-9\-\/]{4,20})',
+      caseSensitive: false,
+    ).firstMatch(recognizedText);
 
-    // 1️⃣ PWD ID Number (Only keeping this logic)
-    if (lower.contains('pwd') ||
-        lower.contains('disability') ||
-        lower.contains('person with disability')) {
-
-      // Pattern captures strictly [0-9\-\/] and looks for common labels
-      final idMatch = RegExp(
-        r'(?:ID|PWD|NO|NUMBER)[:\s#]*([0-9\-\/]{4,20})',
-        caseSensitive: false,
-      ).firstMatch(recognizedText);
-
-      if (idMatch != null) {
-        // Group 1 is the number. Clean it up to enforce strict numeric/dash/slash
-        String cleanedId = idMatch.group(1)!.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim();
-        if (cleanedId.length >= 4) {
-          out['pwd_id_number'] = cleanedId;
-        }
+    if (idMatch != null) {
+      String cleanedId =
+      idMatch.group(1)!.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim();
+      if (cleanedId.length >= 4) {
+        pwdIdNum = cleanedId;
       }
     }
 
-    return out;
+    return {
+      'pwd_id_number': pwdIdNum ?? '',
+    };
   }
 
-// --------------------------------------------------
-// 🔹 Camera Stream & Processing (UPDATED FOR TIMEOUT)
-// --------------------------------------------------
+  // --------------------------------------------------
+  // 🔹 Camera Stream & Processing
+  // --------------------------------------------------
   void _startImageStream() {
-  if (_controller == null || _controller!.value.isStreamingImages) return;
+    // 🛑 Prevent multiple starts
+    if (_controller == null || !_controller!.value.isInitialized || _controller!.value.isStreamingImages) {
+      debugPrint('Stream not starting: Controller is null, not initialized, or already streaming.');
+      return;
+    }
 
-  _controller!.startImageStream((CameraImage image) async {
-    if (_isProcessing) return;
-    _isProcessing = true;
+    _controller!.startImageStream((CameraImage image) async {
+      // 🧠 Prevent overlapping frame processing
+      if (_isProcessing || _controller == null || !_controller!.value.isInitialized) return;
 
-    try {
-      final file = await _convertCameraImageToFile(image);
-      final bytes = await file.readAsBytes();
-      final qualityOk = await _isFrameQualityGood(bytes);
+      _isProcessing = true;
 
-      // ⏱️ Check for timeout
-      final elapsed = DateTime.now().difference(_startTime!).inSeconds;
-      bool isTimeout = elapsed > _timeoutSeconds;
+      try {
+        // 🕒 Timeout check
+        final elapsed = DateTime.now().difference(_startTime!).inSeconds;
+        final bool isTimeout = elapsed > _timeoutSeconds;
 
-      if (qualityOk) {
-        final recognizedText = await _runTextRecognition(file);
-        final detected = _detectIdType(recognizedText);
+        // ✅ Check plane existence
+        if (image.planes.length < 3) {
+          debugPrint('Error: CameraImage does not have enough planes. Skipping frame.');
+          return;
+        }
 
-        final extracted = detected == 'senior'
-            ? extractSeniorIdFields(recognizedText)
-            : _extractFieldsFromText(recognizedText);
+        // 🖼️ Convert frame to file
+        final file = await _convertCameraImageToFile(image);
+        final bytes = await file.readAsBytes();
+        final qualityOk = await _isFrameQualityGood(bytes);
 
-        if (mounted) {
-          setState(() async {
-            _isGoodFrame = true;
-            _detectedType = detected;
+        if (qualityOk) {
+          String detected = 'none';
+          Map<String, String> extracted = {};
+          bool shouldAutoCapture = false;
+
+          if (_isPwdBackCapture) {
+            // 🔸 PWD Back: skip OCR
+            detected = 'pwd';
+            shouldAutoCapture = true;
+            extracted = {};
+          } else {
+            // 🔸 Senior / PWD Front: run OCR
+            final recognizedText = await _runTextRecognition(file);
+            detected = _detectIdType(recognizedText);
+
+            if (detected == 'senior') {
+              extracted = extractSeniorIdFields(recognizedText);
+
+              // 🧠 Cache Senior ID number
+              final current = extracted['senior_id_number'] ?? '';
+              if (current.isNotEmpty) {
+                _lastDetectedSeniorId = current;
+              } else if (_lastDetectedSeniorId.isNotEmpty) {
+                extracted['senior_id_number'] = _lastDetectedSeniorId;
+              }
+
+              shouldAutoCapture = true;
+            } else if (detected == 'pwd') {
+              extracted = _extractPwdIdFields(recognizedText);
+
+              // 🧠 Cache PWD ID number
+              final current = extracted['pwd_id_number'] ?? '';
+              if (current.isNotEmpty) {
+                _lastDetectedPwdId = current;
+              } else if (_lastDetectedPwdId.isNotEmpty) {
+                extracted['pwd_id_number'] = _lastDetectedPwdId;
+              }
+
+              // ✅ If target ID check is still needed
+              final extractedPwdIdNum = extracted['pwd_id_number']
+                  ?.replaceAll(RegExp(r'[^0-9\-\/]'), '')
+                  .trim() ??
+                  '';
+              final idMatchesProfile =
+                  _targetPwdIdNum.isNotEmpty && extractedPwdIdNum == _targetPwdIdNum;
+
+              shouldAutoCapture = idMatchesProfile; // 👈 still checks match
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _isGoodFrame = true;
+              _detectedType = detected;
+            });
 
             if (_detectedType != 'none') {
-              // 🧹 Delete the previous file before saving the new one
+              // 🧼 Delete old saved file
               if (_lastSavedFile != null && await _lastSavedFile!.exists()) {
                 try {
                   await _lastSavedFile!.delete();
@@ -291,55 +330,81 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
                 }
               }
 
-              // Reset timeout on success
               _isWrongIdTimeout = false;
               _consecutiveGoodFrames++;
-
               _lastSavedFile = file;
               _extractedFields = extracted;
-              // Since we successfully detected the type, we restart the timer
-              // for the next capture sequence, but it's not strictly necessary
-              // as the capture completes right after.
             } else if (isTimeout) {
-              // Detected a frame with text, but couldn't identify ID type and timed out
-              _isWrongIdTimeout = true;
-              _consecutiveGoodFrames = 0;
-              _extractedFields = {};
+              setState(() {
+                _isWrongIdTimeout = true;
+                _consecutiveGoodFrames = 0;
+                _extractedFields = {};
+                _lastDetectedPwdId = '';
+                _lastDetectedSeniorId = '';
+              });
             } else {
-              // Still within the time limit, reset consecutive frames
+              setState(() {
+                _consecutiveGoodFrames = 0;
+                _extractedFields = {};
+              });
+            }
+          }
+
+          // ⏳ Reset timeout tracker if detected type is valid
+          if (_detectedType != 'none') {
+            _startTime = DateTime.now();
+            _isWrongIdTimeout = false;
+          }
+
+          // 📸 Auto-capture logic
+          if (_consecutiveGoodFrames >= _requiredGoodFrames &&
+              _lastSavedFile != null &&
+              _detectedType != 'none') {
+
+            // 🚫 For PWD front, only auto capture if ID matches
+            if (!_isPwdBackCapture && _detectedType == 'pwd' && !shouldAutoCapture) {
+              if (mounted) setState(() => _consecutiveGoodFrames = 0);
+            } else {
+              await _controller?.stopImageStream();
+              if (!mounted) return;
+
+              widget.onCapture(_lastSavedFile!, _extractedFields, _detectedType);
+
+              if (mounted) Navigator.pop(context);
+            }
+          }
+        } else {
+          // ❌ Bad frame quality
+          if (mounted) {
+            setState(() {
+              _isGoodFrame = false;
               _consecutiveGoodFrames = 0;
+              _detectedType = 'none';
               _extractedFields = {};
-            }
-          });
+              _lastDetectedPwdId = '';
+              _lastDetectedSeniorId = '';
+              if (isTimeout && !_isWrongIdTimeout) {
+                _isWrongIdTimeout = true;
+              }
+            });
+          }
         }
-      } else {
-        // Bad frame quality, only check for timeout
-        if (mounted) {
-          setState(() {
-            _isGoodFrame = false;
-            _consecutiveGoodFrames = 0;
-            _detectedType = 'none';
-            _extractedFields = {}; // Clear fields on bad frame
-
-            if (isTimeout && !_isWrongIdTimeout) {
-              // Only set timeout state if we haven't already
-              _isWrongIdTimeout = true;
-            }
-          });
-        }
+      } catch (e) {
+        debugPrint('Stream processing error: $e');
+      } finally {
+        await Future.delayed(Duration(milliseconds: frameDelayMs));
+        _isProcessing = false;
       }
-    } catch (e) {
-      debugPrint('Error in image stream: $e');
-    } finally {
-      _isProcessing = false;
-    }
-  });
-}
+    });
+  }
 
 
-// --- Helper Functions (Conversion, Quality, OCR) - Kept as is ---
+
+
+  // --- Helper Functions (Conversion, Quality, OCR) ---
 
   Future<File> _convertCameraImageToFile(CameraImage image) async {
+    // Plane access is safe here because we checked image.planes.length >= 3 in _startImageStream()
     final width = image.width;
     final height = image.height;
     final yPlane = image.planes[0];
@@ -351,14 +416,18 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
         final yp = yPlane.bytes[y * yPlane.bytesPerRow + x];
+        // Use safe access for bytesPerPixel
+        final bytesPerPixel = uPlane.bytesPerPixel ?? 1;
         final uvIndex =
-            (y ~/ 2) * uPlane.bytesPerRow + (x ~/ 2) * uPlane.bytesPerPixel!;
+            (y ~/ 2) * uPlane.bytesPerRow + (x ~/ 2) * bytesPerPixel;
         final up = uPlane.bytes[uvIndex];
         final vp = vPlane.bytes[uvIndex];
 
+        // Convert YUV -> RGB approximation
         int r = (yp + 1.402 * (vp - 128)).round().clamp(0, 255);
-        int g =
-        (yp - 0.344136 * (up - 128) - 0.714136 * (vp - 128)).round().clamp(0, 255);
+        int g = (yp - 0.344136 * (up - 128) - 0.714136 * (vp - 128))
+            .round()
+            .clamp(0, 255);
         int b = (yp + 1.772 * (up - 128)).round().clamp(0, 255);
 
         img.setPixel(x, y, img_pkg.ColorInt8.rgb(r, g, b));
@@ -405,7 +474,7 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
       }
       variance = variance / vals.length;
 
-      // Blur check (lower variance = more blur)
+      // Blur check (lower variance = more blur). You can adjust this value (e.g., 35.0) if needed.
       if (variance < 40.0) return false;
 
       // Overexposure/Brightness check
@@ -453,29 +522,87 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
     super.dispose();
   }
 
+
+  //--------------------------------------------------
+  // 🔹 Build Status Rows (Detailed bottom panel)
   // --------------------------------------------------
-  // 🔹 Build Status Rows (UPDATED FOR TIMEOUT)
-  // --------------------------------------------------
+  String _lastDetectedSeniorId = '';
+  String _lastDetectedPwdId = '';
+
   Widget _buildStatusRows() {
     // Determine the ID number to display
-    final idNumber = _extractedFields.values.isNotEmpty
-        ? _extractedFields.values.first
-        : 'N/A';
+    final idKey = _detectedType == 'senior' ? 'senior_id_number' : 'pwd_id_number';
+    final idNumber = _extractedFields[idKey] ?? 'N/A';
 
     final idNumberColor = idNumber == 'N/A' ? Colors.grey : Colors.greenAccent;
 
-    // ⏱️ Main Status Message
+    // Main Status Message
     String statusMessage;
     Color statusColor;
+    String idMatchMessage = '';
+    Color idMatchColor = Colors.white70;
 
-    if (_isWrongIdTimeout) {
-      statusMessage = "🛑 ERROR: Wrong ID or ID Type not recognized. Please use a Senior/PWD ID.";
+    // PWD Front specific check
+    final bool isPwdFrontCapture = !_isPwdBackCapture && widget.profileData['capture_target'] == 'pwdFront';
+    // Use safe access (?? '') since _extractedFields might not have the key or it might be null
+    final extractedPwdIdNum = isPwdFrontCapture ? (_extractedFields['pwd_id_number']?.replaceAll(RegExp(r'[^0-9\-\/]'), '').trim() ?? '') : '';
+    final bool idMatchesProfile = isPwdFrontCapture && _targetPwdIdNum.isNotEmpty && extractedPwdIdNum == _targetPwdIdNum;
+
+
+    if (_isPwdBackCapture) {
+      // Status for PWD Back: Focus on framing/auto-capture state (Framing Only)
+      if (_consecutiveGoodFrames >= _requiredGoodFrames) {
+        statusMessage = "Auto-Capturing PWD Back ID...";
+        statusColor = Colors.lightGreenAccent;
+      } else {
+        statusMessage = "Align PWD Back ID. Auto-capture pending.";
+        statusColor = Colors.cyanAccent;
+      }
+
+    } else if (isPwdFrontCapture) {
+      // Status for PWD Front
+      if (_detectedType != 'pwd') {
+        statusMessage = "Wrong ID Type Detected. Please use PWD Front ID.";
+        statusColor = Colors.redAccent;
+      } else if (idMatchesProfile && _consecutiveGoodFrames >= _requiredGoodFrames) {
+        statusMessage = "PWD ID Verified! Auto-Capturing...";
+        statusColor = Colors.lightGreenAccent;
+      } else if (idMatchesProfile && _consecutiveGoodFrames > 0) {
+        statusMessage = "PWD ID Matched! Keep steady to capture ($idNumber)";
+        statusColor = Colors.greenAccent;
+      } else if (extractedPwdIdNum.isNotEmpty) {
+        statusMessage = "PWD ID Mismatch. Please check orientation and number.";
+        statusColor = Colors.orangeAccent;
+        idMatchMessage = "Target ID: $_targetPwdIdNum";
+        idMatchColor = Colors.orangeAccent;
+      } else {
+        statusMessage = "PWD Front Card Detected. Extracting ID...";
+        statusColor = Colors.cyanAccent;
+      }
+
+    } else if (widget.profileData['capture_target'] == 'senior') {
+      // Status for Senior ID
+      if (_detectedType != 'senior') {
+        statusMessage = "Wrong ID Type Detected. Please use Senior Citizen ID.";
+        statusColor = Colors.redAccent;
+      } else if (_consecutiveGoodFrames >= _requiredGoodFrames) {
+        statusMessage = "Senior ID Detected! Auto-Capturing...";
+        statusColor = Colors.lightGreenAccent;
+      } else {
+        statusMessage = "Senior Citizen Card Detected. Keep steady.";
+        statusColor = Colors.greenAccent;
+      }
+
+    } else if (_isWrongIdTimeout) {
+      statusMessage =
+      "🛑 ERROR: Wrong ID or ID Type not recognized. Please use the correct ID.";
       statusColor = Colors.orangeAccent;
     } else if (_isGoodFrame) {
-      statusMessage = "✅ Good frame — detecting ID fields...";
-      statusColor = Colors.greenAccent;
+      // Fallback for good frame quality but no recognized type
+      statusMessage = "Card detected, but type is wrong or ID not found.";
+      statusColor = Colors.redAccent;
     } else {
-      statusMessage = "❌ Align ID inside the frame and keep steady";
+      statusMessage = "Align ID inside the frame and keep steady";
       statusColor = Colors.redAccent;
     }
 
@@ -492,14 +619,24 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Detected ID Type: ${_detectedType.toUpperCase()}',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          // Use capture_target for a clearer initial state
+          'Capture Target: ${widget.profileData['capture_target'].toString().toUpperCase()}',
+          style:
+          const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        const SizedBox(height: 4),
-        Text(
-          "ID Extracted: $idNumber",
-          style: TextStyle(color: idNumberColor, fontWeight: FontWeight.bold),
-        ),
+        // Only display ID number if it's not the PWD back and an ID was extracted
+        if (!_isPwdBackCapture && idNumber != 'N/A') ...[
+          const SizedBox(height: 4),
+          Text(
+            "ID Extracted: $idNumber",
+            style: TextStyle(color: idNumberColor, fontWeight: FontWeight.bold),
+          ),
+          if (idMatchMessage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(idMatchMessage, style: TextStyle(color: idMatchColor, fontWeight: FontWeight.bold)),
+            ),
+        ],
         const SizedBox(height: 8),
         Text(
           "Consecutive Good Frames: $_consecutiveGoodFrames / $_requiredGoodFrames",
@@ -508,6 +645,7 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
       ],
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -534,16 +672,16 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'ID Card Area',
-                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                  _isPwdBackCapture ? 'PWD Back Area' : 'ID Card Area',
+                  style: const TextStyle(color: Colors.white70, fontSize: 18),
                 ),
               ),
             ),
           ),
 
-          // 3. Manual Capture Button (Moved to not obstruct the bottom status panel)
+          // 3. Manual Capture Button
           Positioned(
             bottom: 110,
             left: 0,
@@ -552,8 +690,8 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 12),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
                 icon: const Icon(Icons.camera_alt, color: Colors.white),
                 label: const Text(
@@ -566,17 +704,36 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
                   final file = await _takePicture();
                   if (file == null) return;
 
-                  final text = await _runTextRecognition(file);
-                  final detected = _detectIdType(text);
+                  String detected = 'none';
+                  Map<String, String> extracted = {};
 
-                  final extracted = detected == 'senior'
-                      ? extractSeniorIdFields(text)
-                      : _extractFieldsFromText(text);
+                  if (_isPwdBackCapture) {
+                    // PWD Back: Manual capture skips OCR
+                    detected = 'pwd';
+                    extracted = {}; // Ensure fields are empty
+                  } else {
+                    final text = await _runTextRecognition(file);
+                    detected = _detectIdType(text);
+                    extracted = detected == 'senior'
+                        ? extractSeniorIdFields(text)
+                        : _extractPwdIdFields(text);
+                  }
 
                   if (!mounted) return;
 
+                  // Delete previous file before saving the new one
+                  if (_lastSavedFile != null && await _lastSavedFile!.exists()) {
+                    try {
+                      await _lastSavedFile!.delete();
+                      debugPrint(
+                          'Deleted previous capture: ${_lastSavedFile!.path}');
+                    } catch (e) {
+                      debugPrint('Could not delete previous file: $e');
+                    }
+                  }
+
                   widget.onCapture(file, extracted, detected);
-                  Navigator.pop(context);
+                  if (mounted) Navigator.pop(context);
                 },
               ),
             ),
@@ -586,13 +743,12 @@ class _CameraCapturePageState extends State<CameraCapturePage> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              color: Colors.black.withOpacity(0.9), // Increased opacity for better visibility
+              color: Colors.black.withOpacity(0.9), // Increased opacity
               padding: const EdgeInsets.all(18),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Simplified Status Rows (contains the new timeout message)
                   _buildStatusRows(),
                 ],
               ),
