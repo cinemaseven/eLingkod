@@ -8,12 +8,15 @@ import 'package:elingkod/common_widget/form_fields.dart';
 import 'package:elingkod/common_widget/img_file_upload.dart';
 import 'package:elingkod/common_widget/pdf_generator.dart'; // pdf widget
 import 'package:elingkod/common_widget/terms_agreement.dart';
+import 'package:elingkod/pages/camera_capture.dart'; // Import CameraCapturePage
 import 'package:elingkod/pages/home.dart';
 import 'package:elingkod/services/submitRequests_service.dart';
 import 'package:elingkod/services/userData_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 class BarangayID extends StatefulWidget {
   const BarangayID({super.key});
@@ -35,9 +38,13 @@ class _BarangayIDState extends State<BarangayID> {
   final TextStyle labelStyle =
   const TextStyle(fontSize: 16, fontWeight: FontWeight.w400);
 
+  // Replaced manual file picker with the camera file for Valid ID
   File? validIdImage;
   File? residencyImage;
   File? signatureImage;
+
+  // NEW: Store the detected ID type from the camera
+  String _validIdDetectedType = 'none';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -128,166 +135,261 @@ class _BarangayIDState extends State<BarangayID> {
     }
     return null;
   }
-  // Pick an image (for Valid ID / Proof of Residency / Signature)
-Future<void> _pickImage(Function(File) onSelected) async {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return Container(
-        decoration: BoxDecoration(
-          color: ElementColors.primary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: ElementColors.fontColor2),
-                title: Text("Take a photo", style: TextStyle(color:ElementColors.fontColor2)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final XFile? pickedFile =
-                      await _picker.pickImage(source: ImageSource.camera);
-                  if (pickedFile != null) {
-                    setState(() {
-                      onSelected(File(pickedFile.path));
-                    });
-                  }
-                },
-              ),
-              const Divider(height: 0),
-              ListTile(
-                leading: Icon(Icons.photo_library, color: ElementColors.fontColor2),
-                title: Text("Choose from gallery", style: TextStyle(color:ElementColors.fontColor2)),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final XFile? pickedFile =
-                      await _picker.pickImage(source: ImageSource.gallery);
-                  if (pickedFile != null) {
-                    setState(() {
-                      onSelected(File(pickedFile.path));
-                    });
-                  }
-                },
-              ),
-              const Divider(height: 0),
-              ListTile(
-                leading: Icon(Icons.cancel, color: ElementColors.fontColor2),
-                title: Text("Cancel", style: TextStyle(color:ElementColors.fontColor2)),
-                onTap: () => Navigator.pop(context),
-              ),
-            ],
-          ),
+
+  // New function to capture Valid ID using CameraCapturePage
+  Future<void> _captureValidId() async {
+    if (!mounted) return;
+
+    // Prepare data to send to the camera page for logic handling
+    final Map<String, dynamic> cameraProfileData = {
+      // Indicates the target of the capture for logic branching in CameraCapturePage
+      'capture_target': 'validId',
+    };
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            CameraCapturePage(
+              profileData: cameraProfileData, // PASS UPDATED DATA
+              onCapture: (file, fields, detectedType) {
+                // fields is empty for validId, we only care about file and detectedType
+                validIdImage = file;
+                _validIdDetectedType = detectedType;
+              },
+            ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {});
+
+    // Show verification status message
+    if (validIdImage != null) {
+      // Helper to format detected type for display
+      String typeDisplay = _validIdDetectedType != 'none'
+          ? _validIdDetectedType.replaceAll('_', ' ').toUpperCase()
+          : 'UNKNOWN';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                _validIdDetectedType != 'none'
+                    ? '✅ Valid ID Captured. Detected Type: $typeDisplay'
+                    : '⚠️ Captured image, but ID type could not be verified.',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: _validIdDetectedType != 'none' ? Colors.green : ElementColors.secondary
         ),
       );
-    },
-  );
-}
+    }
+  }
+
+  // Pick an image (for Proof of Residency / Signature)
+  Future<void> _pickImage(Function(File) onSelected) async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: ElementColors.primary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.camera_alt, color: ElementColors.fontColor2),
+                  title: Text("Take a photo", style: TextStyle(color:ElementColors.fontColor2)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final XFile? pickedFile =
+                    await _picker.pickImage(source: ImageSource.camera);
+                    if (pickedFile != null) {
+                      setState(() {
+                        onSelected(File(pickedFile.path));
+                      });
+                    }
+                  },
+                ),
+                const Divider(height: 0),
+                ListTile(
+                  leading: Icon(Icons.photo_library, color: ElementColors.fontColor2),
+                  title: Text("Choose from gallery", style: TextStyle(color:ElementColors.fontColor2)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final XFile? pickedFile =
+                    await _picker.pickImage(source: ImageSource.gallery);
+                    if (pickedFile != null) {
+                      setState(() {
+                        onSelected(File(pickedFile.path));
+                      });
+                    }
+                  },
+                ),
+                const Divider(height: 0),
+                ListTile(
+                  leading: Icon(Icons.cancel, color: ElementColors.fontColor2),
+                  title: Text("Cancel", style: TextStyle(color:ElementColors.fontColor2)),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
-  final pickedDate = await showCustomDatePicker(context);
-  if (pickedDate != null) {
-    onDateSelected(pickedDate);
-    controller.text = DateFormat('MM/dd/yyyy').format(pickedDate);
+    final pickedDate = await showCustomDatePicker(context);
+    if (pickedDate != null) {
+      onDateSelected(pickedDate);
+      controller.text = DateFormat('MM/dd/yyyy').format(pickedDate);
+    }
   }
-}
 
 // Form submission
-void _submitBarangayID() async {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  void _submitBarangayID() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-  if (!_formKey.currentState!.validate()) {
-    // Validate form
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: const Text("Please fill out all required fields.",
-          style: TextStyle(fontWeight: FontWeight.bold)),
+    if (!_formKey.currentState!.validate()) {
+      // Validate form
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: const Text("Please fill out all required fields.",
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: ElementColors.secondary,
+        ),
+      );
+      return;
+    }
+
+    // --- Valid ID Capture Check ---
+    if (validIdImage == null) {
+      scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Please capture a Valid ID.',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         backgroundColor: ElementColors.secondary,
-      ),
-    );
+      ));
       return;
-  }
+    }
+    // This check is CRITICAL for the new camera feature
+    if (_validIdDetectedType == 'none') {
+      scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text(
+            'Valid ID Type verification failed. Please ensure a recognized ID (National, Driver\'s, Professional, or Passport) is clearly captured.',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.secondary,
+      ));
+      return;
+    }
 
-  // Show terms and agreement
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) => TermsPopup(
-      onConfirmed: () async {
-        try {
-          // 1. Collect all the data
-          final Map<String, dynamic> formData = {
-            'applicationDate': applicationDate.text,
-            'fullName': fullName.text,
-            'gender': gender, 
-            'birthDate': birthDate.text,
-            'age': age.text,
-            'contactNumber': contactNumber.text,
-            'email': email.text,
-            'houseNum': houseNum.text,
-            'street': street.text,
-            'city': city.text,
-            'province': province.text,
-            'zipCode': zipCode.text,
-            'idPurpose': chosenPurposes, 
-            'validIdImage': validIdImage, 
-            'residencyImage': residencyImage, 
-            'signatureImage': signatureImage, 
-          };
+    // Residency and Signature checks (existing logic)
+    if (residencyImage == null || signatureImage == null) {
+      scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Please upload all required documents.',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ElementColors.secondary,
+      ));
+      return;
+    }
 
-          // 2. Show loading indicator while submitting
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator()),
-          );
 
-          // 3. Submit to Supabase
-          final submitService = SubmitRequestService();
-          await submitService.submitBarangayID(formData: formData);
+    // Show terms and agreement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => TermsPopup(
+        onConfirmed: () async {
+          try {
+            // 1. Collect all the data
+            final Map<String, dynamic> formData = {
+              'applicationDate': applicationDate.text,
+              'fullName': fullName.text,
+              'gender': gender,
+              'birthDate': birthDate.text,
+              'age': age.text,
+              'contactNumber': contactNumber.text,
+              'email': email.text,
+              'houseNum': houseNum.text,
+              'street': street.text,
+              'city': city.text,
+              'province': province.text,
+              'zipCode': zipCode.text,
+              'idPurpose': chosenPurposes,
+              'validIdImage': validIdImage,
+              // Store the detected type
+              'validIdType': _validIdDetectedType,
+              'residencyImage': residencyImage,
+              'signatureImage': signatureImage,
+            };
 
-          // 4. Close all dialogs first (loading and terms)
-          Navigator.of(context, rootNavigator: true).pop();
+            // 2. Show loading indicator while submitting
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => const Center(child: CircularProgressIndicator()),
+            );
+
+            // 3. Submit to Supabase
+            final submitService = SubmitRequestService();
+            await submitService.submitBarangayID(formData: formData);
+
+            // 4. Close all dialogs first (loading and terms)
+            Navigator.of(context, rootNavigator: true).pop();
 
             // 5. Navigate AFTER dialogs are closed
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              CustomPageRoute(page: const Home(showConfirmation: true)),
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                CustomPageRoute(page: const Home(showConfirmation: true)),
+              );
+            }
+          } on Exception catch (e) {
+            Navigator.pop(context);
+            Navigator.pop(dialogContext);
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text('Failed to submit request: ${e.toString()}',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                duration: const Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: ElementColors.secondary,
+              ),
             );
           }
-        } on Exception catch (e) {
-          Navigator.pop(context);
-          Navigator.pop(dialogContext);
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text('Failed to submit request: ${e.toString()}',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: ElementColors.secondary,
-            ),
-          );
-        }
-      },
-    ),
-  );
-}
-  
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
 
+    // Helper to format detected type for display
+    String typeDisplay = _validIdDetectedType != 'none'
+        ? _validIdDetectedType.replaceAll('_', ' ').toUpperCase()
+        : 'Awaiting Capture';
+    Color typeColor = _validIdDetectedType != 'none' ? Colors.green : Colors.grey;
+
     if (_loading) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator())
+          body: Center(
+              child: CircularProgressIndicator())
       );
     }
 
@@ -298,14 +400,14 @@ void _submitBarangayID() async {
         elevation: 0,
         automaticallyImplyLeading: false,
         leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            CustomPageRoute(page: const Home()),
-          );
-        },
-      ),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              CustomPageRoute(page: const Home()),
+            );
+          },
+        ),
       ),
       body: Form(
         key: _formKey,
@@ -314,352 +416,368 @@ void _submitBarangayID() async {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 50),
             child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ElementColors.tertiary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            PdfFormGenerator.generateBarangayId();
+                          },
+                          icon: const Icon(Icons.picture_as_pdf),
+                          label: const Text("Barangay ID"),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Divider
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    child: Row(
+                      children: [
+                        const Expanded(child: Divider(thickness: 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text("Form to be Accomplished", style: labelStyle),
+                        ),
+                        const Expanded(child: Divider(thickness: 1)),
+                      ],
+                    ),
+                  ),
+
+                  // Form Fields
+                  InkWell(
+                    // Use the reusable function here
+                    onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
+                    child: IgnorePointer(
+                      child: TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Application Date',
+                          hint: "MM/DD/YYYY",
+                          controller: applicationDate,
+                          suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
+                          validator: _requiredValidator
+                      ),
+                    ),
+                  ),
+
+                  // Personal Info Text
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 50, 30, 0),
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text(
+                        'PERSONAL INFORMATION',
+                        style: TextStyle(fontSize: media.height * 0.022, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+
+                  // Full Name
+                  const SizedBox(height: 10),
+                  TxtField(
+                      label: "Full Name",
+                      type: TxtFieldType.services,
+                      hint: "First Name Middle Name Last Name",
+                      controller: fullName,
+                      validator: _requiredValidator
+                  ),
+
+                  const SizedBox(height: 20),
+                  InkWell(
+                    // Use the reusable function here
+                    onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
+                    child: IgnorePointer(
+                      child: TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Date of Birth',
+                          hint: "MM/DD/YYYY",
+                          controller: birthDate,
+                          suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
+                          validator: _requiredValidator
+                      ),
+                    ),
+                  ),
+
+                  // Gender
+                  const SizedBox(height: 20),
+                  RadioButtons(
+                    label: 'Gender',
+                    options: ['Male', 'Female'],
+                    initialValue: gender,
+                    onChanged: (value) { setState(() { gender = value; });},
+                    inline: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a gender.';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Age
+                  const SizedBox(height: 10),
+                  Row(
                     children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ElementColors.tertiary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Age:',
+                          hint: "Ex: 17",
+                          controller: age,
+                          width: media.width * 0.3,
+                          customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
+                          validator: _requiredValidator
+                      ),
+
+                      // Contact Number
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Contact Number:',
+                          hint: "Ex: 09xx xxx xxxx",
+                          controller: contactNumber,
+                          keyboardType: TextInputType.number,
+                          width: media.width * 0.5,
+                          customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                          validator: _requiredValidator
+                      ),
+                    ],
+                  ),
+
+                  // Email
+                  const SizedBox(height: 20),
+                  TxtField(
+                      label: "Email Address",
+                      type: TxtFieldType.services,
+                      hint: "example@gmail.com",
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: _requiredValidator
+                  ),
+
+                  // Address
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('Complete Residential Address',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w400,
+                            color: ElementColors.fontColor1,
                           ),
                         ),
-                        onPressed: () {
-                          PdfFormGenerator.generateBarangayId();
-                        },
-                        icon: const Icon(Icons.picture_as_pdf),
-                        label: const Text("Barangay ID"), 
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-            
-                // Divider
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                  child: Row(
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(child: Divider(thickness: 1)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text("Form to be Accomplished", style: labelStyle),
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'House Number:',
+                          hint: "Ex: 387",
+                          controller: houseNum,
+                          width: media.width * 0.3,
+                          labelFontSize: 15,
+                          customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                          validator: _requiredValidator
                       ),
-                      const Expanded(child: Divider(thickness: 1)),
+
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Street:',
+                          hint: "Ex: San Juan",
+                          controller: street,
+                          width: media.width * 0.5,
+                          labelFontSize: 15,
+                          customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
+                          validator: _requiredValidator
+                      ),
                     ],
                   ),
-                ),
-        
-                // Form Fields
-                InkWell(
-                  // Use the reusable function here
-                  onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
-                  child: IgnorePointer(
-                    child: TxtField(
+
+                  const SizedBox(height: 10),
+                  TxtField(
                       type: TxtFieldType.services,
-                      label: 'Application Date',
-                      hint: "MM/DD/YYYY",
-                      controller: applicationDate,
-                      suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
+                      label: 'City:',
+                      hint: "Ex: ",
+                      controller: city,
+                      labelFontSize: 15,
+                      customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
                       validator: _requiredValidator
-                    ),
                   ),
+
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Province:',
+                          hint: "Ex: Pampanga",
+                          controller: province,
+                          width: media.width * 0.5,
+                          labelFontSize: 15,
+                          customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                          validator: _requiredValidator
+                      ),
+
+                      TxtField(
+                          type: TxtFieldType.services,
+                          label: 'Zip Code:',
+                          hint: "Ex: 2007",
+                          controller: zipCode,
+                          width: media.width * 0.29,
+                          labelFontSize: 15,
+                          customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
+                          validator: _requiredValidator
+                      ),
+                    ],
                   ),
-                
-                 // Personal Info Text
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 50, 30, 0),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      'PERSONAL INFORMATION',
-                      style: TextStyle(fontSize: media.height * 0.022, fontWeight: FontWeight.bold),
-                    ),
+
+                  // ID Purpose
+                  const SizedBox(height: 20),
+                  CheckBoxes(
+                    label: "ID Purpose (Check all that apply)",
+                    options: ["Employment", "School", "General Use"],
+                    showOther: true,
+                    onChanged: (selectedValues) {
+                      print("Selected purposes: $selectedValues");
+
+                      // if you want to store them in state:
+                      setState(() {
+                        // example: save to a variable
+                        chosenPurposes = selectedValues;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select at least one.';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                          
-                // Full Name
-                const SizedBox(height: 10),
-                TxtField(
-                  label: "Full Name",
-                  type: TxtFieldType.services,
-                  hint: "First Name Middle Name Last Name",
-                  controller: fullName,
-                  validator: _requiredValidator
-                ),
-                
-                const SizedBox(height: 20),
-                InkWell(
-                  // Use the reusable function here
-                  onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
-                  child: IgnorePointer(
-                    child: TxtField(
-                      type: TxtFieldType.services,
-                      label: 'Date of Birth',
-                      hint: "MM/DD/YYYY",
-                      controller: birthDate,
-                      suffixIcon: Icon(Icons.calendar_today, color: ElementColors.primary),
-                      validator: _requiredValidator
-                    ),
-                  ),
-                  ),
-                        
-              // Gender
-              const SizedBox(height: 20),
-              RadioButtons(
-                label: 'Gender', 
-                options: ['Male', 'Female'], 
-                initialValue: gender,
-                onChanged: (value) { setState(() { gender = value; });},
-                inline: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a gender.';
-                  }
-                  return null;
-                },
-              ),
-                        
-              // Age
-              const SizedBox(height: 10),
-              Row(
-              children: [
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'Age:',
-                  hint: "Ex: 17",
-                  controller: age,
-                  width: media.width * 0.3,
-                  customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
-                  validator: _requiredValidator
-                ),
-                            
-                // Contact Number
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'Contact Number:',
-                  hint: "Ex: 09xx xxx xxxx",
-                  controller: contactNumber,
-                  keyboardType: TextInputType.number,
-                  width: media.width * 0.5,
-                  customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
-                  validator: _requiredValidator
-                ),
-              ],
-              ),
-                        
-              // Email
-              const SizedBox(height: 20),
-              TxtField(
-                label: "Email Address",
-                  type: TxtFieldType.services,
-                  hint: "example@gmail.com",
-                  controller: email,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: _requiredValidator
-                ),
-                        
-              // Address
-              const SizedBox(height: 20),
-              Padding(
-              padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Complete Residential Address', 
-                    style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
+
+                  const SizedBox(height: 20),
+                  Divider(
                     color: ElementColors.fontColor1,
+                    thickness: 1,
+                    indent: 20,
+                    endIndent: 20,
+                  ),
+
+                  // Documentary Requirements Text
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text(
+                        'DOCUMENTARY REQUIREMENTS',
+                        style: TextStyle(fontSize: media.height * 0.022, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
-                ],
-              ),
-              ),
-              
-              Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'House Number:',
-                  hint: "Ex: 387",
-                  controller: houseNum,
-                  width: media.width * 0.3,
-                  labelFontSize: 15,
-                  customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
-                  validator: _requiredValidator
-                ),
-                            
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'Street:',
-                  hint: "Ex: San Juan",
-                  controller: street,
-                  width: media.width * 0.5,
-                  labelFontSize: 15,
-                  customPadding: EdgeInsets.fromLTRB(0, 5, 30, 0),
-                  validator: _requiredValidator
-                ),
-              ],
-              ),
-          
-              const SizedBox(height: 10),
-              TxtField(
-              type: TxtFieldType.services,
-              label: 'City:',
-              hint: "Ex: ",
-              controller: city,
-              labelFontSize: 15,
-              customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
-              validator: _requiredValidator
-              ),
-              
-              const SizedBox(height: 10),
-              Row(
-              children: [
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'Province:',
-                  hint: "Ex: Pampanga",
-                  controller: province,
-                  width: media.width * 0.5,
-                  labelFontSize: 15,
-                  customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
-                  validator: _requiredValidator
-                ),
-                            
-                TxtField(
-                  type: TxtFieldType.services,
-                  label: 'Zip Code:',
-                  hint: "Ex: 2007",
-                  controller: zipCode,
-                  width: media.width * 0.29,
-                  labelFontSize: 15,
-                  customPadding: EdgeInsets.fromLTRB(10, 5, 30, 0),
-                  validator: _requiredValidator
-                ),
-              ],
-              ),
-              
-              // ID Purpose
-              const SizedBox(height: 20),
-              CheckBoxes(
-                label: "ID Purpose (Check all that apply)",
-                options: ["Employment", "School", "General Use"],
-                showOther: true,
-                onChanged: (selectedValues) {
-                  print("Selected purposes: $selectedValues");
-              
-                  // if you want to store them in state:
-                  setState(() {
-                    // example: save to a variable
-                    chosenPurposes = selectedValues;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select at least one.';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 20),
-              Divider(
-              color: ElementColors.fontColor1,
-              thickness: 1,
-              indent: 20,
-              endIndent: 20,
-              ),
-              
-              // Documentary Requirements Text
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    'DOCUMENTARY REQUIREMENTS',
-                    style: TextStyle(fontSize: media.height * 0.022, fontWeight: FontWeight.bold),
+                  // Valid ID (UPDATED SECTION)
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    child: Column(
+                      children: [
+                        // New Button for Camera Capture
+                        Buttons(
+                          title: validIdImage != null ? "Recapture Valid ID" : "Capture Valid ID",
+                          type: BtnType.secondary,
+                          height: 45,
+                          fontSize: media.width * 0.035,
+                          width: media.width * 0.7,
+                          onClick: _captureValidId,
+                        ),
+                        const SizedBox(height: 8),
+                        // Display image and detected type
+                        if (validIdImage != null)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Status Text
+                              Text(
+                                'Detected ID Type: $typeDisplay',
+                                style: TextStyle(
+                                  color: typeColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Image Preview
+                              Image.file(validIdImage!, height: 160),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
+
+                        // Proof of Residency (UNCHANGED)
+                        const SizedBox(height: 10),
+                        UploadImageBox(
+                          label: "Upload Proof of Residency",
+                          imageFile: residencyImage, onPickFile: () async {
+                          await _pickImage((file) => residencyImage = file);
+                          return residencyImage;
+                        },
+                          validator: (imageFile) {
+                            if (imageFile == null) {
+                              return 'Please upload your proof of residency.';
+                            }
+                            return null;
+                          },
+                          onChanged: (image) => setState(() => residencyImage = image),
+                        ),
+                        // Signature (UNCHANGED)
+                        const SizedBox(height: 10),
+                        UploadImageBox(
+                          label: "Applicant Signature over Printed Name",
+                          imageFile: signatureImage, onPickFile: () async {
+                          await _pickImage((file) => signatureImage = file);
+                          return signatureImage;
+                        },
+                          validator: (imageFile) {
+                            if (imageFile == null) {
+                              return 'Please upload your signature over printed name.';
+                            }
+                            return null;
+                          },
+                          onChanged: (image) => setState(() => signatureImage = image),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              // Valid ID
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  children: [
-                    UploadImageBox(
-                      label: "Capture Valid ID",
-                      imageFile: validIdImage, 
-                      onPickFile: () async {
-                        await _pickImage((file) => validIdImage = file);
-                        return validIdImage;
-                      },
-                      validator: (imageFile) {
-                        if (imageFile == null) {
-                          return 'Please upload a valid ID.';
-                        }
-                        return null;
-                      },
-                      onChanged: (image) => setState(() => validIdImage = image),
+                  // Submit button
+                  const SizedBox(height: 30),
+                  Center(
+                    child: SizedBox(
+                      width: isSmallScreen ? media.width * 0.5 : media.width * 0.3,
+                      child: Buttons(
+                          title: "Submit",
+                          type: BtnType.secondary,
+                          fontSize: isSmallScreen ? 16 : 14,
+                          height: 45,
+                          onClick: _submitBarangayID
+                      ),
                     ),
-                    // Proof of Residency
-                    const SizedBox(height: 10),
-                    UploadImageBox(
-                      label: "Upload Proof of Residency",
-                      imageFile: residencyImage, onPickFile: () async {
-                        await _pickImage((file) => residencyImage = file);
-                        return residencyImage;
-                      },
-                      validator: (imageFile) {
-                        if (imageFile == null) {
-                          return 'Please upload your proof of residency.';
-                        }
-                        return null;
-                      },
-                      onChanged: (image) => setState(() => residencyImage = image),
-                    ),
-                    // Signature
-                    const SizedBox(height: 10),
-                    UploadImageBox(
-                      label: "Applicant Signature over Printed Name",
-                      imageFile: signatureImage, onPickFile: () async {
-                        await _pickImage((file) => signatureImage = file);
-                        return signatureImage;
-                      },
-                      validator: (imageFile) {
-                        if (imageFile == null) {
-                          return 'Please upload your signature over printed name.';
-                        }
-                        return null;
-                      },
-                      onChanged: (image) => setState(() => signatureImage = image),
-                    ),
-                  ],
-                ),
-              ),
-              // Submit button
-              const SizedBox(height: 30),
-              Center(
-                child: SizedBox(
-                  width: isSmallScreen ? media.width * 0.5 : media.width * 0.3,
-                  child: Buttons(
-                  title: "Submit",
-                  type: BtnType.secondary,
-                  fontSize: isSmallScreen ? 16 : 14,
-                  height: 45,
-                onClick: _submitBarangayID
-                ),
-                ),
-              ),]
-          ),),
+                  ),]
+            ),),
         ),
       ),
     );
