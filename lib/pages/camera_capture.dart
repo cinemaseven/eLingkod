@@ -8,7 +8,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image/image.dart' as img_pkg;
 import 'package:path_provider/path_provider.dart';
 
-/// CameraCapturePage
+/// Camera Capture Page
 /// onCapture: `(File capturedImage, Map<String,String> extractedFields, String detectedType)`
 /// detectedType: 'senior' | 'pwd' | 'professional' | 'driver_license' | 'national_id' | 'passport' | 'postal_id' | 'none'
 class CameraCapturePage extends StatefulWidget {

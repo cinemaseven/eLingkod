@@ -123,7 +123,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(
-                              '⚠️ Warning: Scanned Senior ID ($newSeniorID) differs from the existing value ($currentSeniorID). Please verify and correct the field below.',
+                              'Warning: Scanned Senior ID ($newSeniorID) differs from the existing value ($currentSeniorID). Please verify and correct the field below.',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           duration: const Duration(seconds: 5),
                           behavior: SnackBarBehavior.floating,
@@ -162,7 +162,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                       _pwdFrontExtracted['pwd_id_number']!.isNotEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('✅ PWD Front ID Captured and verified.',
+                          content: Text('PWD Front ID Captured and verified.',
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           duration: const Duration(seconds: 3),
                           behavior: SnackBarBehavior.floating,
