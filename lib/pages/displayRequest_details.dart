@@ -310,34 +310,42 @@ void _showFilePopup(String url, {bool isImage = true}) {
                                       onPressed: () async {
                                         String fileUrl = value.toString();
 
-                                        // Map which bucket to use per request type
                                         final Map<String, String> bucketMap = {
                                           "barangay_id_request": "barangay-id-images",
                                           "barangay_clearance_request": "barangay-clearance-images",
                                           "business_clearance_request": "business-clearance-images",
                                         };
 
-                                        // Inside your ElevatedButton onPressed
-                                        if (fileUrl.startsWith("private")) {
-                                          final bucketName = bucketMap[widget.requestType] ?? "public";
-                                          final signed = await supabase.storage
+                                        final bucketName = bucketMap[widget.requestType] ?? "public";
+
+                                        try {
+                                          String objectPath = fileUrl;
+
+                                          if (objectPath.contains("/storage/v1/object/")) {
+                                            final parts = objectPath.split("/storage/v1/object/");
+                                            objectPath = parts[1].split("/").skip(1).join("/"); // drop 'public' or 'private'
+                                          }
+
+                                          // Clean up if the bucket name appears twice
+                                          if (objectPath.startsWith("$bucketName/")) {
+                                            objectPath = objectPath.replaceFirst("$bucketName/", "");
+                                          }
+
+                                          // Create signed URL
+                                          final signedUrl = await supabase.storage
                                               .from(bucketName)
-                                              .createSignedUrl(fileUrl, 60);
-                                          fileUrl = signed;
+                                              .createSignedUrl(objectPath, 300); // 5 minutes
+
+                                          final isImage = fileUrl.toLowerCase().endsWith(".jpg") ||
+                                              fileUrl.toLowerCase().endsWith(".jpeg") ||
+                                              fileUrl.toLowerCase().endsWith(".png");
+
+                                          _showFilePopup(signedUrl, isImage: isImage);
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error loading file: $e')),
+                                          );
                                         }
-
-                                        // // Use signed URL if private bucket
-                                        // if (fileUrl.startsWith("private")) {
-                                        //   final signed = await supabase.storage
-                                        //       .from('your-bucket-name')
-                                        //       .createSignedUrl(fileUrl, 60);
-                                        //   fileUrl = signed;
-                                        // }
-
-                                        final isImage = fileUrl.toLowerCase().endsWith(".jpg") ||
-                                            fileUrl.toLowerCase().endsWith(".jpeg") ||
-                                            fileUrl.toLowerCase().endsWith(".png");
-                                        _showFilePopup(fileUrl, isImage: isImage);
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: ElementColors.secondary,
