@@ -1,4 +1,3 @@
-// additional_info.dart
 import 'dart:io';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
@@ -21,39 +20,31 @@ class AdditionalInfo extends StatefulWidget {
 class _AdditionalInfoState extends State<AdditionalInfo> {
   final _formKey = GlobalKey<FormState>();
 
-  // yes/no selections
   String? seniorYesOrNo;
   String? pwdYesOrNo;
 
-  // captured images
   File? _seniorCardImage;
   File? _frontPWDImage;
   File? _backPWDImage;
 
-  // NEW: Save the detected ID type from the camera page (used for verification only)
   String _seniorDetectedType = 'none';
 
-  // NOTE: For PWD, we use this for PWD Front. PWD Back detection is bypassed in camera_capture.dart.
   String _pwdDetectedType = 'none';
 
-  // original extracted maps (from camera) - Kept only for ID number
   Map<String, String> _seniorExtracted = {};
   Map<String, String> _pwdFrontExtracted = {};
 
   final UserDataService _userDataService = UserDataService();
 
-  // editable controllers for inline editing of OCR results - Only for ID Numbers
   final Map<String, TextEditingController> _seniorControllers = {};
   final Map<String, TextEditingController> _pwdFrontControllers = {};
 
-  // typed ID numbers (kept for manual entry fallback and main form fields)
   final TextEditingController seniorIDNum = TextEditingController();
   final TextEditingController pwdIDNum = TextEditingController();
 
   final supabase = Supabase.instance.client;
   bool _isSubmitting = false;
 
-  // helper: accept either String url or Map result from upload helper (KEEP)
   String? _extractUrl(dynamic uploadResult) {
     if (uploadResult == null) return null;
     if (uploadResult is String) return uploadResult;
@@ -67,23 +58,20 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
   Future<void> _captureId(String which) async {
     if (!mounted) return;
 
-    // Prepare data to send to the camera page for logic handling
+    // prepares data to send to the camera page for logic handling
     final Map<String, dynamic> cameraProfileData = {
-      // Passes the PWD ID for verification on the PWD Front capture
       'pwd_id_number': pwdIDNum.text.trim(),
-      // Indicates the target of the capture for logic branching in CameraCapturePage
       'capture_target': which,
       ...widget.profileData,
     };
 
-    // Validate PWD ID is entered before capturing PWD front/back
-    if (which.startsWith('pwd') && (pwdIDNum.text
+    if (which.startsWith('senior') && (seniorIDNum.text
         .trim()
         .isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: const Text(
-                '⚠️ Please enter the PWD ID Number manually first.',
+                'Please enter the Senior ID Number manually first.',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -93,16 +81,29 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
       return;
     }
 
+    if (which.startsWith('pwd') && (pwdIDNum.text
+        .trim()
+        .isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: const Text(
+                'Please enter the PWD ID Number manually first.',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.secondary
+        ),
+      );
+      return;
+    }
 
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) =>
             CameraCapturePage(
-              profileData: cameraProfileData, // PASS UPDATED DATA
+              profileData: cameraProfileData,
               onCapture: (file, fields, detectedType) {
-                // Define ONLY the ID key based on the detected type
-                // Note: fields map might be empty for PWD back capture
                 final idKey = detectedType == 'senior'
                     ? 'senior_id_number'
                     : 'pwd_id_number';
@@ -112,14 +113,16 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                   _seniorCardImage = file;
                   _seniorExtracted = Map<String, String>.from(fields);
                   _seniorControllers.clear();
-                  _seniorDetectedType = detectedType; // <<< SAVING DETECTED TYPE
+                  _seniorDetectedType = detectedType;
 
-                  // --- START: ID Comparison/Validation Logic (Senior) ---
+                  bool mismatchWarningShown = false;
+                  // --- SENIOR: ID comparison/validation ---
                   final newSeniorID = fields['senior_id_number'] ?? '';
                   final currentSeniorID = seniorIDNum.text.trim();
 
                   if (currentSeniorID.isNotEmpty && newSeniorID.isNotEmpty &&
                       currentSeniorID != newSeniorID) {
+                    mismatchWarningShown = true;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                           content: Text(
@@ -127,44 +130,68 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           duration: const Duration(seconds: 5),
                           behavior: SnackBarBehavior.floating,
-                          backgroundColor: ElementColors.secondary
+                          backgroundColor: ElementColors.primary
                       ),
                     );
                   }
-                  // --- END: ID Comparison/Validation Logic ---
 
                   for (var k in allKeys) {
                     _seniorControllers[k] =
                         TextEditingController(text: fields[k] ?? '');
                   }
+
+                  if (!mismatchWarningShown &&
+                      _seniorExtracted.containsKey('senior_id_number') &&
+                      _seniorExtracted['senior_id_number']!.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Senior ID Captured. Please ensure the manual input matches the card.',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          duration: const Duration(seconds: 4),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.green
+                      ),
+                    );
+                  }
                 } else if (which == 'pwdFront') {
                   _frontPWDImage = file;
                   _pwdFrontExtracted = Map<String, String>.from(fields);
                   _pwdFrontControllers.clear();
-                  _pwdDetectedType = detectedType; // <<< SAVING DETECTED TYPE
+                  _pwdDetectedType = detectedType;
+                  bool mismatchWarningShown = false;
 
-                  // *** CRITICAL FIX: Update main controller with OCR result ***
+                  // --- PWD: ID comparison/validation ---
                   final extractedPwdID = fields['pwd_id_number'] ?? '';
-                  if (extractedPwdID.isNotEmpty) {
-                    // Immediately update the manual input field with the OCR result
-                    pwdIDNum.text = extractedPwdID;
+                  final currentPwdID = pwdIDNum.text.trim();
+
+                  if (currentPwdID.isNotEmpty && extractedPwdID.isNotEmpty &&
+                      currentPwdID != extractedPwdID) {
+                    mismatchWarningShown = true;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Warning: Scanned PWD ID ($extractedPwdID) differs from the manually entered value ($currentPwdID). Please verify and correct the field below.',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          duration: const Duration(seconds: 5),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: ElementColors.primary
+                      ),
+                    );
                   }
-                  // *** CRITICAL FIX END ***
 
                   for (var k in allKeys) {
-                    // Update the map for potential inline editing
                     _pwdFrontControllers[k] =
                         TextEditingController(text: fields[k] ?? '');
                   }
 
-                  // If PWD ID was captured, show success message
-                  if (_pwdFrontExtracted.containsKey('pwd_id_number') &&
+                  if (!mismatchWarningShown &&
+                      _pwdFrontExtracted.containsKey('pwd_id_number') &&
                       _pwdFrontExtracted['pwd_id_number']!.isNotEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text('PWD Front ID Captured and verified.',
+                          content: Text('PWD Front ID Captured. Please ensure the manual input matches the card.',
                               style: TextStyle(fontWeight: FontWeight.bold)),
-                          duration: const Duration(seconds: 3),
+                          duration: const Duration(seconds: 4),
                           behavior: SnackBarBehavior.floating,
                           backgroundColor: Colors.green
                       ),
@@ -172,13 +199,10 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                   }
                 } else if (which == 'pwdBack') {
                   _backPWDImage = file;
-                  // PWD Back capture does not update OCR fields or detected type, only the file.
-
-                  // Show success message for PWD Back capture
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(
-                            '✅ PWD Back ID Captured (Framing Verified).',
+                            'PWD Back ID Captured.',
                             style: TextStyle(fontWeight: FontWeight.bold)),
                         duration: const Duration(seconds: 3),
                         behavior: SnackBarBehavior.floating,
@@ -194,7 +218,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
     setState(() {});
   }
 
-  // Unused helper methods (kept for completeness)
+//hahhaha ayaw ko na
   bool _ocrContainsKeyword(Map<String, TextEditingController> controllers,
       String keyword) {
     final kw = keyword.toLowerCase();
@@ -237,7 +261,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
       return;
     }
 
-    // --- ID Type and Image Verification ---
+    // ID type & image verification
     if (seniorYesOrNo == 'Yes') {
       if (_seniorCardImage == null) {
         scaffold.showSnackBar(SnackBar(
@@ -249,6 +273,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
         ));
         return;
       }
+
       if (_seniorDetectedType != 'senior') {
         scaffold.showSnackBar(SnackBar(
           content: Text(
@@ -260,7 +285,25 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
         ));
         return;
       }
+      final extractedSeniorID = _seniorExtracted['senior_id_number']?.trim() ?? '';
+      final typedSeniorID = seniorIDNum.text.trim();
+      if (extractedSeniorID.isNotEmpty && typedSeniorID.isNotEmpty &&
+          extractedSeniorID != typedSeniorID) {
+        scaffold.showSnackBar(
+          SnackBar(
+            content: Text(
+              'The entered Senior ID does not match the scanned ID number. Please verify before continuing.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.secondary,
+          ),
+        );
+        return;
+      }
     }
+
 
     if (pwdYesOrNo == 'Yes') {
       if (_frontPWDImage == null) {
@@ -294,13 +337,30 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
         ));
         return;
       }
+      final extractedPwdID = _pwdFrontExtracted['pwd_id_number']?.trim() ?? '';
+      final typedPwdID = pwdIDNum.text.trim();
+      if (extractedPwdID.isNotEmpty && typedPwdID.isNotEmpty &&
+          extractedPwdID != typedPwdID) {
+        scaffold.showSnackBar(
+          SnackBar(
+            content: Text(
+              'The entered PWD ID does not match the scanned ID number. Please verify before continuing.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.secondary,
+          ),
+        );
+        return;
+      }
     }
 
 
     setState(() => _isSubmitting = true);
 
     try {
-      // --- CALL SERVICE INSTEAD OF INLINE UPLOAD ---
+      // --- call service instead of inline upload ---
       await _userDataService.saveCompleteOnboardingProfile(
         initialProfileData: widget.profileData,
         seniorYesOrNo: seniorYesOrNo,
@@ -314,11 +374,11 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ Profile created successfully!',
+        SnackBar(content: Text('Profile created successfully!',
             style: TextStyle(fontWeight: FontWeight.bold)),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.green // ElementColors.secondary
+            backgroundColor: Colors.green
         ),
       );
 
@@ -340,8 +400,6 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
     }
   }
 
-
-  // _previewImage (KEEP)
   Widget _previewImage(File? f, String label) {
     if (f == null) return Text('$label: no image yet');
     return Column(
@@ -354,12 +412,10 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
     );
   }
 
-  // build inline editable fields from controllers map (MODIFIED: ID ONLY)
   List<Widget> _buildEditableFields(
       Map<String, TextEditingController> controllers) {
     final widgets = <Widget>[];
     controllers.forEach((key, ctrl) {
-      // Only include ID number fields
       if (key == 'senior_id_number' || key == 'pwd_id_number') {
         widgets.add(Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
@@ -398,15 +454,12 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
         .of(context)
         .size;
 
-    // Determine PWD Status Display
-    // The PWD status display should only be for PWD Front capture which determines the type
     final pwdStatusText = _frontPWDImage != null
         ? 'Status: ID Type Detected: ${_pwdDetectedType.toUpperCase()}'
         : 'Status: Awaiting PWD Front Capture';
     final pwdStatusColor = _pwdDetectedType == 'pwd'
         ? Colors.green
         : (_frontPWDImage != null ? Colors.red : Colors.grey);
-
 
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
@@ -423,7 +476,6 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                // Back button + title
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -496,7 +548,6 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                         ),
                         const SizedBox(height: 12),
                         Buttons(
-                          // Removed "(Front)"
                           title: "Capture Senior Citizen ID",
                           type: BtnType.secondary,
                           height: 45,
@@ -505,15 +556,12 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                           onClick: () => _captureId('senior'),
                         ),
                         const SizedBox(height: 8),
-                        // Removed "(Front)"
                         _previewImage(_seniorCardImage, 'Senior ID'),
-                        // Show type status for user feedback
                         Text('Status: ID Type Detected: ${_seniorDetectedType
                             .toUpperCase()}',
                             style: TextStyle(color: _seniorDetectedType ==
                                 'senior' ? Colors.green : Colors.red)),
                         const SizedBox(height: 8),
-                        // editable extracted fields inline (ID ONLY)
                         if (_seniorControllers.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
@@ -595,7 +643,6 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                         ),
                         const SizedBox(height: 8),
                         _previewImage(_backPWDImage, 'PWD Back'),
-                        // Status for PWD Back (Framing only)
                         Text(
                             _backPWDImage != null
                                 ? 'Status: PWD Back Image Captured'
@@ -616,8 +663,8 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
                     fontSize: 16,
                     height: 45,
                     onClick: () {
-                      if (_isSubmitting) return; // prevents multiple taps
-                      _createProfile(); // triggers your async function
+                      if (_isSubmitting) return;
+                      _createProfile();
                     },
                   ),
                 ),

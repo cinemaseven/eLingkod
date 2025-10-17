@@ -318,6 +318,20 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       }
     }
     bool isApproved = status.toLowerCase() == 'approved';
+    bool isRejected = status.toLowerCase() == 'rejected';
+
+    // Determine colors
+    Color bgColor = isApproved
+        ? Colors.green
+        : isRejected
+        ? Colors.red.shade300
+        : ElementColors.lightSecondary;
+
+    Color textColor = isApproved
+        ? ElementColors.fontColor2
+        : isRejected
+        ? Colors.white
+        : ElementColors.fontColor1;
 
     return InkWell(
       onTap: () {
@@ -370,12 +384,12 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: isApproved ? Colors.green : ElementColors.lightSecondary,
+                          color: bgColor
                         ),
                         child: Text(
                           status,
                           style: TextStyle(
-                            color: isApproved ? ElementColors.fontColor2 : ElementColors.fontColor1,
+                            color: textColor,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),

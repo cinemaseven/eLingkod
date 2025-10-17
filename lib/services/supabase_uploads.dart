@@ -9,29 +9,24 @@ class SupabaseUploadService {
     required String folderName,
     required String userId,
   }) async {
-    // 1. Determine the bucket based on the folder name
-    // If the folder is one of the designated ID folders, use 'barangay-id-images' or 'senior-pwd-images'.
     final bucketName = (folderName == 'validIdImage' || folderName == 'residencyImage' || folderName == 'signatureImage')
-        ? 'barangay-id-images' // Bucket for general/barangay IDs
-        : 'senior-pwd-images';  // Bucket for PWD and Senior IDs
+        ? 'barangay-id-images' // bucket for general/barangay IDs
+        : 'senior-pwd-images';  // bucket for PWD and Senior IDs
 
     try {
-      // 2. Generate unique file path, which includes the specified folderName
-      // The format will be: <folderName>/<userId>-<timestamp>.jpg
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final filePath = '$folderName/$userId-$fileName';
 
-      // 3. Upload to Supabase bucket
+      // uploads to buckets
       final storageResponse = await _supabase.storage
           .from(bucketName)
           .upload(filePath, imageFile);
 
-      // If upload failed
       if (storageResponse.isEmpty) {
         throw Exception('Failed to upload image to $bucketName');
       }
 
-      // 4. Get the public URL
+      // public url
       final publicUrl = _supabase.storage
           .from(bucketName)
           .getPublicUrl(filePath);
