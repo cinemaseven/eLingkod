@@ -324,7 +324,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     Color bgColor = isApproved
         ? Colors.green
         : isRejected
-        ? Colors.red.shade300
+        ? Colors.red
         : ElementColors.lightSecondary;
 
     Color textColor = isApproved
