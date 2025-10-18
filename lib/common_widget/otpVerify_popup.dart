@@ -5,7 +5,6 @@ import 'package:elingkod/services/auth_service.dart';
 import 'package:flutter/material.dart';
 
 class OtpverifyPopup extends StatefulWidget {
-  // We make both optional, but require at least one using an assert
   final String? phoneNumber;
   final String? email;
   final VoidCallback? onVerified;
@@ -39,7 +38,6 @@ class _OtpverifyPopupState extends State<OtpverifyPopup> {
           token: _otpController.text.trim(),
         );
       } else {
-        // This case should be caught by the assert, but remains for safety
         throw Exception("Verification target (email or phone) is missing.");
       }
 

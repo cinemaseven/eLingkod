@@ -78,7 +78,7 @@ Widget _buildCivilStatusDropdown() {
   ];
 
   return Padding(
-    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0), // Use the same padding as .services
+    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,13 +86,12 @@ Widget _buildCivilStatusDropdown() {
         Text(
           'Civil Status:',
           style: TextStyle(
-            fontSize: 15, // Match labelFontSize from TxtField
+            fontSize: 15,
             fontWeight: FontWeight.w400,
             color: ElementColors.fontColor1,
           ),
         ),
-        const SizedBox(height: 6), // Match the spacing from TxtField
-        // The Container with the shadow effect
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             boxShadow: [
@@ -102,7 +101,7 @@ Widget _buildCivilStatusDropdown() {
                 offset: const Offset(0, 5),
               ),
             ],
-            borderRadius: BorderRadius.circular(10), // Match the border radius from TxtField's decoration
+            borderRadius: BorderRadius.circular(10),
           ),
           child: DropdownButtonFormField<String>(
             decoration: InputDecoration(
@@ -154,6 +153,7 @@ Widget _buildCivilStatusDropdown() {
     _prefillFromAuth();
   }
 
+// Retrieves the current authenticated user to prefill email or phone fields
 void _prefillFromAuth() {
   final user = Supabase.instance.client.auth.currentUser;
 
@@ -178,7 +178,7 @@ void _prefillFromAuth() {
   }
 }
 
-
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -186,6 +186,7 @@ void _prefillFromAuth() {
     return null;
   }
 
+  // Validates the signup form and navigates to AdditionalInfo page with collected profile data
   void _navigateToAdditionalInfo() {
     if (_formKey.currentState!.validate()) {
       final profileData = {
@@ -213,7 +214,7 @@ void _prefillFromAuth() {
         CustomPageRoute(page: AdditionalInfo(profileData: profileData)),
       );
     } else {
-      // This is where you would show a snackbar or dialog if the form is invalid
+      // Shows a snackbar if form is invalid
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("All text fields and options must have values.",
@@ -226,6 +227,7 @@ void _prefillFromAuth() {
     }
   }
 
+  // Disposes controllers
   @override
   void dispose() {
     email.dispose();
@@ -249,7 +251,6 @@ void _prefillFromAuth() {
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
@@ -352,7 +353,7 @@ void _prefillFromAuth() {
                 // Date of birth
                 const SizedBox(height: 10),
                 InkWell(
-                  // Use the reusable function here
+                  // Call date selector function
                   onTap: _selectDate,
                   child: IgnorePointer(
                     child: TxtField(
@@ -414,6 +415,7 @@ void _prefillFromAuth() {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // House number
                     TxtField(
                       type: TxtFieldType.services,
                       label: 'House Number:',
@@ -424,6 +426,7 @@ void _prefillFromAuth() {
                       customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
                       validator: _requiredValidator,
                     ),
+                    // Street
                     TxtField(
                       type: TxtFieldType.services,
                       label: 'Street:',
@@ -436,6 +439,7 @@ void _prefillFromAuth() {
                     ),
                   ],
                 ),
+                // City
                 const SizedBox(height: 10),
                 TxtField(
                   type: TxtFieldType.services,
@@ -449,6 +453,7 @@ void _prefillFromAuth() {
                 const SizedBox(height: 10),
                 Row(
                   children: [
+                    // Province
                     TxtField(
                       type: TxtFieldType.services,
                       label: 'Province:',
@@ -459,6 +464,7 @@ void _prefillFromAuth() {
                       customPadding: const EdgeInsets.fromLTRB(40, 5, 0, 0),
                       validator: _requiredValidator,
                     ),
+                    // Zip code
                     TxtField(
                       type: TxtFieldType.services,
                       label: 'Zip Code:',
@@ -484,7 +490,6 @@ void _prefillFromAuth() {
                 // Civil Status
                 const SizedBox(height: 20),
                 _buildCivilStatusDropdown(),
-                
                 // Voter Status
                 const SizedBox(height: 20),
                 RadioButtons(
@@ -503,6 +508,7 @@ void _prefillFromAuth() {
                     return null;
                   },
                 ),
+                // Next button that triggers navigation to the AdditionalInfo page when clicked
                 const SizedBox(height: 40),
                 SizedBox(
                   width: media.width * 0.5,

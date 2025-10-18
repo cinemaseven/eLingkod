@@ -51,9 +51,10 @@ class Registration extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Signup button
                     Buttons(
                       title: "Sign Up",
-                      fontSize: scaled(0.045), // scaled font
+                      fontSize: scaled(0.045),
                       onClick: () {
                         Navigator.push(
                           context,
@@ -76,7 +77,7 @@ class Registration extends StatelessWidget {
                         Text(
                           "or",
                           style: TextStyle(
-                            fontSize: scaled(0.04), // scaled font
+                            fontSize: scaled(0.04),
                             color: ElementColors.primary,
                           ),
                         ),
@@ -90,12 +91,12 @@ class Registration extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: media.height * 0.025),
-
+                    // Login Button
                     Buttons(
                       title: "Log In",
                       customFontColor: ElementColors.secondary,
                       type: BtnType.lightSecondary,
-                      fontSize: scaled(0.045), // scaled font
+                      fontSize: scaled(0.045),
                       onClick: () {
                         Navigator.push(
                           context,

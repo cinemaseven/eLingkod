@@ -16,6 +16,7 @@ class RequestStatusPage extends StatefulWidget {
 }
 
 class _RequestStatusPageState extends State<RequestStatusPage> {
+  // Initializes supabase client instance for database
   final SupabaseClient supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> _requests = [];
@@ -27,6 +28,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
   RealtimeChannel? _clearanceSub;
   RealtimeChannel? _businessSub;
 
+  // Initializes the widget by fetching existing requests and setting up real-time updates.
   @override
   void initState() {
     super.initState();
@@ -34,6 +36,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     _setupRealtime();
   }
 
+  // Cancels active real-time subscriptions and disposes resources
   @override
   void dispose() {
     _idSub?.unsubscribe();
@@ -42,6 +45,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     super.dispose();
   }
 
+  // Fetches user requests from Supabase; stops loading if no user is logged in.
   Future<void> _fetchRequests() async {
     final user = supabase.auth.currentUser;
     if (user == null) {
@@ -51,7 +55,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
     List<Map<String, dynamic>> requests = [];
 
-    // 🔹 Barangay ID
+    // Retrieves Barangay ID requests from Supabase
     final barangayIdRes = await supabase
         .from('barangay_id_request')
         .select('barangay_id_id, status, created_at')
@@ -68,7 +72,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       });
     }
 
-    // 🔹 Barangay Clearance
+    // Retrieves Barangay Clearance requests from Supabase
     final clearanceRes = await supabase
         .from('barangay_clearance_request')
         .select('barangay_clearance_id, status, created_at')
@@ -85,7 +89,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       });
     }
 
-    // 🔹 Business Clearance
+    // Retrieves Business Clearance requests from Supabase
     final businessRes = await supabase
         .from('business_clearance_request')
         .select('business_clearance_id, status, created_at')
@@ -102,23 +106,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       });
     }
 
-    // // 🔹 Sort requests by date (oldest first)
-    // requests.sort((a, b) {
-    //   final dateA = DateTime.tryParse(a['date'] ?? '') ?? DateTime.now();
-    //   final dateB = DateTime.tryParse(b['date'] ?? '') ?? DateTime.now();
-    //   return dateA.compareTo(dateB);
-    // });
-
-    // // 🔹 Separate approved requests to appear at bottom
-    // final approved = requests.where((r) => r['status'] == 'approved').toList();
-    // final others = requests.where((r) => r['status'] != 'approved').toList();
-
-    // setState(() {
-    //   _requests = [...others, ...approved];
-    //   _isLoading = false;
-    // });
-    
-    // 🔹 Sort requests: non-approved first, approved last, then by date (oldest first)
+    // Sort requests: non-approved first, approved last, then by date (oldest first)
     requests.sort((a, b) {
       if (a['status'] == 'approved' && b['status'] != 'approved') return 1;
       if (a['status'] != 'approved' && b['status'] == 'approved') return -1;
@@ -136,17 +124,18 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   }
 
+  // Sets up real-time listeners for user-specific request updates
   void _setupRealtime() {
     final user = supabase.auth.currentUser;
     if (user == null) return;
-
+    // Refreshes the request list when changes occur
     void refreshIfUserMatches(Map<String, dynamic> newRecord) {
       if (newRecord['user_id'] == user.id) {
         _fetchRequests();
       }
     }
 
-    // Barangay ID
+    // Subscribes to real-time updates for Barangay ID requests
     _idSub = supabase.channel('barangay_id_changes').onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
@@ -154,7 +143,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       callback: (payload) => refreshIfUserMatches(payload.newRecord),
     ).subscribe();
 
-    // Barangay Clearance
+    // Subscribes to real-time updates for Barangay Clearance requests
     _clearanceSub = supabase.channel('barangay_clearance_changes').onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
@@ -162,7 +151,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       callback: (payload) => refreshIfUserMatches(payload.newRecord),
     ).subscribe();
 
-    // Business Clearance
+    // Subscribes to real-time updates for Business Clearance requests
     _businessSub = supabase.channel('business_clearance_changes').onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
@@ -194,25 +183,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       body: Column(
         children: [
           Padding(padding: EdgeInsetsGeometry.only(bottom: 30)),
-          // // 🔹 Search bar
-          // Padding(
-          //   padding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
-          //   child: CustomSearchBar<Map<String, dynamic>>(
-          //     items: _requests,
-          //     itemLabel: (item) => item["title"],
-          //     itemBuilder: (context, item) => ListTile(
-          //       title: Text(item["title"]),
-          //     ),
-          //     onItemTap: (item) {
-          //       Navigator.push(
-          //         context,
-          //         CustomPageRoute(page: item["page"]),
-          //       );
-          //     },
-          //     hintText: "Can't find what you're looking for?",
-          //   ),
-          // ),
-
           if (!_isSearching) ...[
             // Table header
             Container(
@@ -258,7 +228,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
             ),
             const SizedBox(height: 20),
 
-            // 🔹 Requests or loading
+            // Requests or loading
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -301,6 +271,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     );
   }
 
+  // Builds a tappable request row
   Widget _buildRequestRow({
     required IconData icon,
     required String title,
@@ -357,7 +328,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
           children: [
             Row(
               children: [
-                // Category + Icon
                 Expanded(
                   child: Row(
                     children: [
@@ -373,7 +343,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                     ],
                   ),
                 ),
-                // Status fixed width
                 Expanded(
                   child: Align(
                     alignment: Alignment.centerRight,

@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
 import 'package:elingkod/common_widget/hamburger.dart';
-import 'package:elingkod/common_widget/search_bar.dart'; 
+import 'package:elingkod/common_widget/search_bar.dart';
 import 'package:elingkod/pages/barangay_clearance.dart';
 import 'package:elingkod/pages/barangay_id.dart';
 import 'package:elingkod/pages/business_clearance.dart';
-import 'package:elingkod/pages/request_status.dart';
-import 'package:elingkod/pages/profile.dart';
 import 'package:elingkod/pages/confirmation.dart';
+import 'package:elingkod/pages/profile.dart';
+import 'package:elingkod/pages/request_status.dart';
+import 'package:flutter/material.dart';
 
 class Home extends StatefulWidget {
   final bool showConfirmation; 
@@ -19,6 +19,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  // Initialize the TextEditingController
   final TextEditingController _searchController = TextEditingController();
 
   // List of available services
@@ -142,7 +143,7 @@ class _HomeState extends State<Home> {
         ),
       ),
 
-      // ✅ Bottom Navigation
+      // Bottom Navigation
       bottomNavigationBar: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -183,7 +184,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 🔹 Reusable service button
+  // Reusable service button
   Widget _buildServiceButton(
       BuildContext context, {
         required String label,
@@ -224,7 +225,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 🎨 Helper to set button colors by service name
+  // Helper to set button colors by service name
   Color _getServiceColor(String label) {
     switch (label) {
       case "Barangay Clearance":

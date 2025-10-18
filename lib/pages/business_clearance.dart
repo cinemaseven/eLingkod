@@ -51,19 +51,15 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   File? applicantSignatureImage;
 
   final ImagePicker _picker = ImagePicker();
-  
 
-  // Controllers
+  // Initialize the TextEditingControllers
   final TextEditingController applicationDate = TextEditingController();
-
   final TextEditingController businessName = TextEditingController();
   final TextEditingController houseNum = TextEditingController();
   final TextEditingController bldgUnit = TextEditingController();
   final TextEditingController street = TextEditingController();
   final TextEditingController village = TextEditingController();
-  final TextEditingController natureOfBusiness =
-  TextEditingController();
-
+  final TextEditingController natureOfBusiness = TextEditingController();
   final TextEditingController totalArea = TextEditingController();
   final TextEditingController capitalization = TextEditingController();
   final TextEditingController grossSales = TextEditingController();
@@ -71,22 +67,17 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   final TextEditingController contactNumber = TextEditingController();
   final TextEditingController email = TextEditingController();
 
-  // final TextEditingController contractExpiryMonth = TextEditingController();
-  // final TextEditingController contractExpiryDay = TextEditingController();
-  // final TextEditingController contractExpiryYear = TextEditingController();
-
-  // Autofill info
+  // Autofill info and sets initial application date
   @override
   void initState() {
     super.initState();
     // Sets application date to today
     _selectedApplicationDate = DateTime.now();
     applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
-
-    // Fetch data
     _loadAndAutofillUserDetails();
   }
 
+  // Loads user details from database and initialize controllers
   Future <void> _loadAndAutofillUserDetails() async {
     try {
       final details = await UserDataService().fetchUserDetails();
@@ -107,6 +98,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     }
 }
 
+  // Disposes controllers
   @override
   void dispose() {
     applicationDate.dispose();
@@ -125,6 +117,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     super.dispose();
   }
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -132,7 +125,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     return null;
   }
 
-  // Pick an image
+  // For picking an image
   Future<void> _pickImage(Function(File) onSelected) async {
   showModalBottomSheet(
     context: context,
@@ -192,7 +185,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   );
 }
 
-  // Pick a file
+  // For picking a file
   Future<void> _pickFile(Function(File) onSelected) async {
   showModalBottomSheet(
     context: context,
@@ -239,7 +232,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   );
 }
 
-
+  // Date selection
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
   final pickedDate = await showCustomDatePicker(context);
   if (pickedDate != null) {
@@ -248,10 +241,11 @@ class _BusinessClearanceState extends State<BusinessClearance> {
   }
 }
 
+  // Handle business clearance submission
   void _submitBusinessClearance() {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-    // Validate form fields first
+    // Validate form fields
     if (!_formKey.currentState!.validate()) {
       scaffoldMessenger.showSnackBar(
         SnackBar(
@@ -264,13 +258,14 @@ class _BusinessClearanceState extends State<BusinessClearance> {
       );
         return;
     }
+     // Show applicant undertaking
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => BusinessClearancePopup(
         onConfirmed: () async {
           try {
-          // 1. Collect all the data
+          // Collect all the data
           final Map<String, dynamic> formData = {
             'applicationDate': applicationDate.text,
             'appType': appType,
@@ -300,21 +295,21 @@ class _BusinessClearanceState extends State<BusinessClearance> {
             'signatureImage': signatureImage,
           };
 
-            // 2. Show loading indicator while submitting
+            // Show loading indicator while submitting
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (_) => const Center(child: CircularProgressIndicator()),
           );
 
-          // 3. Submit to Supabase
+          // Submit to Supabase
           final submitService = SubmitRequestService();
           await submitService.submitBusinessClearance(formData: formData);
 
-          // 4. Close all dialogs first (loading and terms)
+          // Close all dialogs first (loading and terms)
           Navigator.of(context, rootNavigator: true).pop();
 
-          // 5. Navigate AFTER dialogs are closed
+          // Navigates after dialogs are closed
           if (mounted) {
             Navigator.of(context).pushReplacement(
               CustomPageRoute(page: const Home(showConfirmation: true)),
@@ -343,6 +338,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
 
+    // Loading indicator
     if (_loading) {
       return const Scaffold(
         body: Center(
@@ -417,7 +413,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
             
                 // Form Fields
                 InkWell(
-                  // Use the reusable function here
+                  // Call date selector function
                   onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
                   child: IgnorePointer(
                     child: TxtField(
@@ -444,7 +440,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                     return null;
                   },
                 ),
-                              
+
                   // Business Name
                   const SizedBox(height: 10),
                   TxtField(
@@ -454,7 +450,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                   controller: businessName,
                   validator:  _requiredValidator
                   ),
-                            
+
                 // Address
                 const SizedBox(height: 20),
                 Padding(
@@ -476,6 +472,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // House or unit number
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'House/Unit Number:',
@@ -486,7 +483,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                     customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
                     validator:  _requiredValidator
                   ),
-                                  
+                  // Building or unit number
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Building/Unit Number:',
@@ -500,10 +497,10 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 ],
                 ),
       
-                // Street Avenue
+                // Street or avenue
                 const SizedBox(height: 10),
                 TxtField(
-                label: "Street / Avenue",
+                  label: "Street / Avenue",
                   type: TxtFieldType.services,
                   hint: "Street / Avenue",
                   controller: street,
@@ -515,7 +512,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 // Village
                 const SizedBox(height: 10),
                 TxtField(
-                label: "Village / Subdivision / Area",
+                  label: "Village / Subdivision / Area",
                   type: TxtFieldType.services,
                   hint: "Village / Subdivision / Area",
                   controller: village,
@@ -523,17 +520,17 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                   customPadding: EdgeInsets.fromLTRB(40, 5, 30, 0),
                   validator:  _requiredValidator
                 ),
-                            
+
                 // Nature of Business
                 const SizedBox(height: 20),
                 TxtField(
-                type: TxtFieldType.services,
-                hint: "Nature of Business",
-                label: "Nature of Business",
-                controller: natureOfBusiness,
-                validator:  _requiredValidator
+                  type: TxtFieldType.services,
+                  hint: "Nature of Business",
+                  label: "Nature of Business",
+                  controller: natureOfBusiness,
+                  validator:  _requiredValidator
                 ),
-      
+
                 // Ownership
                 const SizedBox(height: 20),
                 RadioButtons(
@@ -547,7 +544,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                     return null;
                   },
                 ),
-                            
+
                 // Business Location Status
                 const SizedBox(height: 10),
                 RadioButtons(
@@ -561,46 +558,50 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                     return null;
                   },
                 ),
-                            
-                // Other Info
+
+                // Establishment area
                 const SizedBox(height: 10),
                 TxtField(
-                label: "Establishment Total Area",
-                type: TxtFieldType.services,
-                hint: "e.g. 200 sqm",
-                controller: totalArea,
-                validator:  _requiredValidator
+                  label: "Establishment Total Area",
+                  type: TxtFieldType.services,
+                  hint: "e.g. 200 sqm",
+                  controller: totalArea,
+                  validator:  _requiredValidator
                 ),
-      
+
+                // Capitalization
                 const SizedBox(height: 20),
                 TxtField(
-                label: "Capitalization (₱)",
-                type: TxtFieldType.services,
-                hint: "In Philippine Peso",
-                controller: capitalization,
-                validator:  _requiredValidator
-                )
-                ,
+                  label: "Capitalization (₱)",
+                  type: TxtFieldType.services,
+                  hint: "In Philippine Peso",
+                  controller: capitalization,
+                  validator:  _requiredValidator
+                ),
+
+                // Gross sales
                 const SizedBox(height: 20),
                 TxtField(
-                label: "Gross Sales and Receipts (Precedent Year)",
-                type: TxtFieldType.services,
-                hint: "In Philippine Peso",
-                controller: grossSales,
-                validator:  _requiredValidator
+                  label: "Gross Sales and Receipts (Precedent Year)",
+                  type: TxtFieldType.services,
+                  hint: "In Philippine Peso",
+                  controller: grossSales,
+                  validator:  _requiredValidator
                 ),
-                            
+
+                // Bussiness owner name
                 const SizedBox(height: 20),
                 TxtField(
-                label: "Business Owner / Manager",
-                type: TxtFieldType.services,
-                hint: "Owner / Manager Full Name",
-                controller: ownerName,
-                validator:  _requiredValidator
+                  label: "Business Owner / Manager",
+                  type: TxtFieldType.services,
+                  hint: "Owner / Manager Full Name",
+                  controller: ownerName,
+                  validator:  _requiredValidator
                 ),
-                            
-                  const SizedBox(height: 20),
-                  TxtField(
+
+                // Contact Number
+                const SizedBox(height: 20),
+                TxtField(
                   label: "Contact Number",
                   type: TxtFieldType.services,
                   hint: "09XXXXXXXXX",
@@ -608,15 +609,16 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                   keyboardType: TextInputType.number,
                   validator:  _requiredValidator
                 ),
-                            
+
+                // Email
                 const SizedBox(height: 20),
                 TxtField(
-                label: "Email Address",
-                type: TxtFieldType.services,
-                hint: "example@gmail.com",
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                validator:  _requiredValidator
+                  label: "Email Address",
+                  type: TxtFieldType.services,
+                  hint: "example@gmail.com",
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  validator:  _requiredValidator
                 ),
 
                 const SizedBox(height: 40),
@@ -626,7 +628,7 @@ class _BusinessClearanceState extends State<BusinessClearance> {
                 indent: 20,
                 endIndent: 20,
                 ),
-                            
+
                 // Documentary Requirements Text
                 Padding(
                 padding: const EdgeInsets.fromLTRB(30, 30, 30, 0),

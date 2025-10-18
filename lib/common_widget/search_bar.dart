@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:elingkod/common_style/colors_extension.dart';
+import 'package:flutter/material.dart';
 
 class CustomSearchBar<T> extends StatefulWidget {
   final List<T> items;
@@ -16,7 +16,7 @@ class CustomSearchBar<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.onItemTap,
     this.hintText = "Search...",
-    this.onSearchChanged, // allow parent to listen for search state
+    this.onSearchChanged,
   });
 
   @override
@@ -59,9 +59,9 @@ class _CustomSearchBarState<T> extends State<CustomSearchBar<T>> {
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: Offset(0, size.height), // directly attached to bar
+            offset: Offset(0, size.height),
             child: Material(
-              color: Colors.transparent, // keep transparent so your BoxDecoration shows
+              color: Colors.transparent,
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,

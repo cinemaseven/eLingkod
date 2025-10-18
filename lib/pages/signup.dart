@@ -21,11 +21,13 @@ class _SignupState extends State<Signup> {
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
 
+  // Initialize the TextEditingControllers
   TextEditingController email = TextEditingController();
   TextEditingController phoneNumber = TextEditingController();
   TextEditingController password = TextEditingController();
   TextEditingController rePassword = TextEditingController();
 
+  // Map for validation status
   Map<String, bool> _validationStatus = {
     'isLengthValid': false,
     'hasUppercase': false,
@@ -33,12 +35,14 @@ class _SignupState extends State<Signup> {
     'hasNumber': false,
   };
 
+  // Adds a listener to monitor password validation
   @override
   void initState() {
     super.initState();
     password.addListener(_checkPasswordValidation);
   }
 
+  // Removes listeners and disposes controllers
   @override
   void dispose() {
     password.removeListener(_checkPasswordValidation);
@@ -49,6 +53,7 @@ class _SignupState extends State<Signup> {
     super.dispose();
   }
 
+  // Function call to check if password is valid
   void _checkPasswordValidation() {
     setState(() {
       _validationStatus['isLengthValid'] = password.text.length >= 8;
@@ -62,6 +67,7 @@ class _SignupState extends State<Signup> {
     });
   }
 
+  // Returns password strength value
   double get _passwordStrength {
     int score = 0;
     if (_validationStatus['isLengthValid']!) score++;
@@ -71,6 +77,7 @@ class _SignupState extends State<Signup> {
     return score / 4.0;
   }
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -78,80 +85,81 @@ class _SignupState extends State<Signup> {
     return null;
   }
 
-Future<void> _signup() async {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
-  if (_formKey.currentState!.validate()) {
-    try {
-      if (useEmail) {
-        // Sign up with email
-        await AuthService().signUp(
-          email: email.text.trim(),
-          password: password.text,
-        );
-        
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Verification code sent to your email!', 
-              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: ElementColors.fontColor2,
-          ),
-        );
-        // Show OTP dialog
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return OtpverifyPopup(email: email.text.trim());
-          },
-        );
+  // Handles the signup process
+  Future<void> _signup() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    if (_formKey.currentState!.validate()) {
+      try {
+        if (useEmail) {
+          // Sign up with email
+          await AuthService().signUp(
+            email: email.text.trim(),
+            password: password.text,
+          );
+          
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Verification code sent to your email!', 
+                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.fontColor2,
+            ),
+          );
+          // Show OTP dialog
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return OtpverifyPopup(email: email.text.trim());
+            },
+          );
 
-      } else {
-        // Sign up with phone number
-        await AuthService().signUp(
-          phoneNumber: phoneNumber.text.trim(),
-          password: password.text,
-        );
+        } else {
+          // Sign up with phone number
+          await AuthService().signUp(
+            phoneNumber: phoneNumber.text.trim(),
+            password: password.text,
+          );
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('OTP sent to your phone number!',
+                style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: ElementColors.fontColor2,
+            ),
+          );
+          // Show OTP dialog
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return OtpverifyPopup(phoneNumber: phoneNumber.text.trim());
+            },
+          );
+        }
+      } on AuthException catch (e) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('OTP sent to your phone number!',
+            content: Text('Auth Error: ${e.message}',
               style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             backgroundColor: ElementColors.fontColor2,
           ),
         );
-        // Show OTP dialog
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return OtpverifyPopup(phoneNumber: phoneNumber.text.trim());
-          },
+      } catch (e) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred: $e',
+              style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: ElementColors.fontColor2,
+          ),
         );
       }
-    } on AuthException catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Auth Error: ${e.message}',
-            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
-    } catch (e) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('An unexpected error occurred: $e',
-            style: TextStyle(color: ElementColors.tertiary, fontWeight: FontWeight.bold)),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: ElementColors.fontColor2,
-        ),
-      );
     }
   }
-}
 
 
   @override
@@ -203,6 +211,7 @@ Future<void> _signup() async {
                         ),
                       ),
                       SizedBox(height: media.height * 0.04),
+                      // Email field
                       if (useEmail)
                         TxtField(
                           type: TxtFieldType.regis,
@@ -212,7 +221,6 @@ Future<void> _signup() async {
                           validator: (value) {
                             final requiredError = _requiredValidator(value);
                             if (requiredError != null) return requiredError;
-                        
                             if (!RegExp(
                                     r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
                                 .hasMatch(value!)) {
@@ -222,6 +230,7 @@ Future<void> _signup() async {
                           },
                         )
                       else
+                        // Phone number field
                         TxtField(
                           type: TxtFieldType.regis,
                           controller: phoneNumber,
@@ -237,6 +246,7 @@ Future<void> _signup() async {
                           },
                         ),
                       SizedBox(height: media.height * 0.02),
+                      // Password field
                       TxtField(
                         type: TxtFieldType.regis,
                         controller: password,
@@ -257,7 +267,6 @@ Future<void> _signup() async {
                         validator: (value) {
                           final requiredError = _requiredValidator(value);
                           if (requiredError != null) return requiredError;
-                        
                           if (!_validationStatus.values.every((element) => element)) {
                             return 'Please meet all password requirements';
                           }
@@ -268,6 +277,7 @@ Future<void> _signup() async {
                         padding: const EdgeInsets.symmetric(vertical: 10.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          // Displays password strength requirements
                           children: [
                             _buildValidationRow(
                               '8 or more characters',
@@ -301,6 +311,7 @@ Future<void> _signup() async {
                         ),
                       ),
                       SizedBox(height: media.height * 0.02),
+                      // Re-enter password field
                       TxtField(
                         type: TxtFieldType.regis,
                         controller: rePassword,
@@ -329,6 +340,7 @@ Future<void> _signup() async {
                         },
                       ),
                       SizedBox(height: media.height * 0.05),
+                      // Signup button
                       SizedBox(
                         width: double.infinity,
                         child: Buttons(
@@ -363,6 +375,7 @@ Future<void> _signup() async {
                         ],
                       ),
                       SizedBox(height: media.height * 0.02),
+                      // Buttons for other signup options
                       SizedBox(
                         width: double.infinity,
                         child: Buttons(
@@ -384,6 +397,7 @@ Future<void> _signup() async {
                         ),
                       ),
                       SizedBox(height: media.height * 0.03),
+                      // Login text
                       GestureDetector(
                         onTap: () {
                           Navigator.push(context, CustomPageRoute(page: Login()));
@@ -420,6 +434,7 @@ Future<void> _signup() async {
     );
   }
 
+  // Builds a row showing a validation indicator
   Widget _buildValidationRow(String text, bool isValid) {
     return Row(
       children: [

@@ -15,16 +15,18 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   File? _profileImage;
-  UserDetails? _userDetails; // data fetched from DB
+  UserDetails? _userDetails;
   bool _loading = true;
-  bool _hasChanged = false; // track if user made changes
+  bool _hasChanged = false;
 
+  // Initializes the widget by loading user details
   @override
   void initState() {
     super.initState();
     _loadUserDetails();
   }
 
+  // Fetches user details from the database and updates state accordingly
   Future<void> _loadUserDetails() async {
     try {
       final details = await UserDataService().fetchUserDetails();
@@ -39,16 +41,17 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  // Builds a string showing special statuses (Senior, PWD) for the user.
   String _buildSpecialStatus(UserDetails user) {
-  final List<String> statuses = [];
-  if (user.isSenior == true) statuses.add("Senior Citizen");
-  if (user.isPwd == true) statuses.add("PWD");
-  return statuses.join(" | "); // returns "Senior Citizen", "PWD", "Senior Citizen | PWD", or ""
-}
+    final List<String> statuses = [];
+    if (user.isSenior == true) statuses.add("Senior Citizen");
+    if (user.isPwd == true) statuses.add("PWD");
+    return statuses.join(" | ");
+  }
 
+  // Saves updated user profile details to the database and shows a success or error message
   Future<void> _saveProfile() async {
     if (_userDetails == null) return;
-
     try {
       await UserDataService().updateUserDetails({
         'gender': _userDetails?.gender,
@@ -84,11 +87,11 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  // Builds a labeled row showing user data, optionally editable via a dropdown for specific fields
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     double responsiveFont(double base) => base * (size.width / 390);
-
   Widget buildRow(
     String label,
     String? value, {
@@ -102,7 +105,7 @@ class _ProfileState extends State<Profile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 160, // 🔹 fixed width, enough space for all labels
+            width: 160,
             child: Text(
               "$label:",
               style: TextStyle(
@@ -183,7 +186,7 @@ class _ProfileState extends State<Profile> {
               : SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 🔹 Header + Avatar
+                      // Header + Avatar
                       Stack(
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
@@ -216,7 +219,7 @@ class _ProfileState extends State<Profile> {
 
                       const SizedBox(height: 60),
 
-                      // 🔹 Name & contact
+                      // User name and status (Senior, PWD, or None)
                       Text(
                         "${_userDetails?.firstName ?? ""} ${_userDetails?.middleName ?? ""} ${_userDetails?.lastName ?? ""}",
                         style: TextStyle(
@@ -236,7 +239,7 @@ class _ProfileState extends State<Profile> {
                           ),
                         ),
                       const SizedBox(height: 25),
-                      // 🔹 Profile info
+                      // Profile info
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 25),
                         child: Column(
@@ -297,7 +300,7 @@ class _ProfileState extends State<Profile> {
 
                       const SizedBox(height: 30),
 
-                      // 🔹 Save button
+                      // Save button
                       Center(
                         child: SizedBox(
                           width: MediaQuery.of(context).size.width *

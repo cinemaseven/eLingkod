@@ -39,20 +39,17 @@ class _BarangayClearanceState extends State<BarangayClearance> {
 
   final ImagePicker _picker = ImagePicker();
 
+  // Initialize the TextEditingControllers
   final TextEditingController applicationDate = TextEditingController();
-
   final TextEditingController lengthStay = TextEditingController();
   final TextEditingController clearanceNum = TextEditingController();
   final TextEditingController fullName = TextEditingController();
-
   final TextEditingController houseNum = TextEditingController();
   final TextEditingController street = TextEditingController();
   final TextEditingController city = TextEditingController();
   final TextEditingController province = TextEditingController();
   final TextEditingController zipCode = TextEditingController();
-
   final TextEditingController birthDate = TextEditingController();
-
   final TextEditingController age = TextEditingController();
   final TextEditingController contactNumber = TextEditingController();
   final TextEditingController birthPlace = TextEditingController();
@@ -61,6 +58,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   final TextEditingController email = TextEditingController();
   final TextEditingController purpose = TextEditingController();
 
+  // Civil status dropdown
   Widget _buildCivilStatusDropdown() {
   final List<String> civilStatusOptions = [
     'Single',
@@ -71,21 +69,19 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   ];
 
   return Padding(
-    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0), // Use the same padding as .services
+    padding: const EdgeInsets.fromLTRB(30, 5, 30, 0),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // The label for the dropdown
         Text(
           'Civil Status:',
           style: TextStyle(
-            fontSize: 15, // Match labelFontSize from TxtField
+            fontSize: 15,
             fontWeight: FontWeight.w400,
             color: ElementColors.fontColor1,
           ),
         ),
-        const SizedBox(height: 6), // Match the spacing from TxtField
-        // The Container with the shadow effect
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             boxShadow: [
@@ -95,7 +91,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                 offset: const Offset(0, 5),
               ),
             ],
-            borderRadius: BorderRadius.circular(10), // Match the border radius from TxtField's decoration
+            borderRadius: BorderRadius.circular(10),
           ),
           child: DropdownButtonFormField<String>(
             decoration: InputDecoration(
@@ -111,7 +107,6 @@ class _BarangayClearanceState extends State<BarangayClearance> {
                 vertical: 14,
                 horizontal: 15,
               ),
-              // REMOVED: errorStyle: const TextStyle(height: 0),
             ),
             isExpanded: true,
             value: _selectedCivilStatus,
@@ -141,18 +136,17 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   );
 }
 
-  // Autofill info
+  // Autofill info and sets initial application date
   @override
   void initState() {
     super.initState();
     // Sets application date to today
     _selectedApplicationDate = DateTime.now();
     applicationDate.text = DateFormat('MM/dd/yyyy').format(_selectedApplicationDate!);
-
-    // Fetch data
     _loadAndAutofillUserDetails();
   }
 
+  // Loads user details from database and initialize controllers
   Future<void> _loadAndAutofillUserDetails() async {
     try {
       final details = await UserDataService().fetchUserDetails();
@@ -192,6 +186,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
     }
   }
 
+  // Disposes controllers
   @override
   void dispose() {
     lengthStay.dispose();
@@ -213,6 +208,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
     super.dispose();
   }
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -279,7 +275,7 @@ class _BarangayClearanceState extends State<BarangayClearance> {
     },
   );
 }
-
+  // Date selection
   Future<void> _selectDate(BuildContext context, TextEditingController controller, Function(DateTime?) onDateSelected) async {
   final pickedDate = await showCustomDatePicker(context);
   if (pickedDate != null) {
@@ -288,12 +284,12 @@ class _BarangayClearanceState extends State<BarangayClearance> {
   }
 }
 
-// Form submission
+// Handle barangay clearance submission
 void _submitBarangayClearance() async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
 
+  // Validate form fields
   if (!_formKey.currentState!.validate()) {
-    // Validate form
     scaffoldMessenger.showSnackBar(
       SnackBar(
         content: const Text("Please fill out all required fields.",
@@ -305,7 +301,6 @@ void _submitBarangayClearance() async {
     );
       return;
   }
-    
   // Show terms and agreement
   showDialog(
     context: context,
@@ -313,7 +308,7 @@ void _submitBarangayClearance() async {
     builder: (dialogContext) => TermsPopup(
       onConfirmed: () async {
         try {
-          // 1. Collect all the data
+          // Collect all the data
           final Map<String, dynamic> formData = {
             'applicationDate': applicationDate.text,
             'residencyType': residencyType,
@@ -337,21 +332,21 @@ void _submitBarangayClearance() async {
             'signatureImage': signatureImage,
           };
           
-          // 2. Show loading indicator while submitting
+          // Show loading indicator while submitting
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (_) => const Center(child: CircularProgressIndicator()),
           );
 
-          // 3. Submit to Supabase
+          // Submit to Supabase
           final submitService = SubmitRequestService();
           await submitService.submitBarangayClearance(formData: formData);
 
-          // 4. Close all dialogs first (loading and terms)
+          // Close all dialogs first (loading and terms)
           Navigator.of(context, rootNavigator: true).pop();
 
-          // 5. Navigate AFTER dialogs are closed
+          // Navigates after dialogs are closed
           if (mounted) {
             Navigator.of(context).pushReplacement(
               CustomPageRoute(page: const Home(showConfirmation: true)),
@@ -380,6 +375,7 @@ void _submitBarangayClearance() async {
     var media = MediaQuery.of(context).size;
     final isSmallScreen = media.width < 600;
 
+    // Loading indicator
     if (_loading) {
       return const Scaffold(
         body: Center(
@@ -411,7 +407,7 @@ void _submitBarangayClearance() async {
             padding: const EdgeInsets.only(bottom: 50),
             child: Column(
               children: [
-                // Header with back and button
+                // Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Row(
@@ -450,9 +446,9 @@ void _submitBarangayClearance() async {
                     ],
                   ),
                 ),
-            
+                // Form Fields
                 InkWell(
-                // Use the reusable function here
+                // Call date selector function
                 onTap: () => _selectDate(context, applicationDate, (date) => _selectedApplicationDate = date),
                 child: IgnorePointer(
                   child: TxtField(
@@ -558,6 +554,7 @@ void _submitBarangayClearance() async {
                 Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // House number
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'House Number:',
@@ -568,7 +565,7 @@ void _submitBarangayClearance() async {
                     customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
                     validator: _requiredValidator
                   ),
-                                
+                  // Street
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Street:',
@@ -581,7 +578,8 @@ void _submitBarangayClearance() async {
                   ),
                 ],
                 ),
-            
+
+                // City
                 const SizedBox(height: 10),
                 TxtField(
                 type: TxtFieldType.services,
@@ -596,6 +594,7 @@ void _submitBarangayClearance() async {
                 const SizedBox(height: 10),
                 Row(
                 children: [
+                  // Province
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Province:',
@@ -606,7 +605,7 @@ void _submitBarangayClearance() async {
                     customPadding: EdgeInsets.fromLTRB(40, 5, 0, 0),
                     validator: _requiredValidator
                   ),
-                                
+                  // Zip code
                   TxtField(
                     type: TxtFieldType.services,
                     label: 'Zip Code:',
@@ -622,7 +621,7 @@ void _submitBarangayClearance() async {
         
                 const SizedBox(height: 20),
                 InkWell(
-                // Use the reusable function here
+                // Call date selector function
                 onTap: () => _selectDate(context, birthDate, (date) => _selectedBirthDate = date),
                 child: IgnorePointer(
                   child: TxtField(
@@ -649,7 +648,7 @@ void _submitBarangayClearance() async {
                     customPadding: EdgeInsets.fromLTRB(30, 5, 0, 0),
                     validator: _requiredValidator
                   ),
-                                
+
                   // Contact Number
                   TxtField(
                     type: TxtFieldType.services,
@@ -663,7 +662,7 @@ void _submitBarangayClearance() async {
                   ),
                 ],
                 ),
-                            
+
                 // Place of Birth
                 const SizedBox(height: 20),
                 TxtField(
@@ -698,7 +697,7 @@ void _submitBarangayClearance() async {
                     keyboardType: TextInputType.emailAddress,
                     validator: _requiredValidator
                   ),
-                            
+
                 // Clearance Purpose
                 const SizedBox(height: 20),
                 TxtField(
@@ -708,7 +707,7 @@ void _submitBarangayClearance() async {
                     controller: purpose,
                     validator: _requiredValidator
                 ),
-                            
+
                 // Signature (Image)
                 const SizedBox(height: 30),
               Padding(

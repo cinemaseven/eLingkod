@@ -17,12 +17,15 @@ class DisplayRequestDetails extends StatefulWidget {
   State<DisplayRequestDetails> createState() => _RequestDetailsPageState();
 }
 
+// State class for displaying detailed information of a specific request.
 class _RequestDetailsPageState extends State<DisplayRequestDetails> {
+  // Initializes supabase client instance for database
   final SupabaseClient supabase = Supabase.instance.client;
 
   Map<String, dynamic>? _requestData;
   bool _loading = true;
 
+  // Maps request types to their respective field labels for display purposes
   final Map<String, Map<String, String>> fieldLabels = {
     "barangay_id_request": {
       "applicationDate": "Application Date",
@@ -94,12 +97,14 @@ class _RequestDetailsPageState extends State<DisplayRequestDetails> {
     },
   };
 
+  // Initializes the state by fetching the request details.
   @override
   void initState() {
     super.initState();
     _fetchRequestDetails();
   }
-
+  
+  // Fetches the request details from Supabase based on request type and ID.
   Future<void> _fetchRequestDetails() async {
     String idColumn;
 
@@ -129,9 +134,7 @@ class _RequestDetailsPageState extends State<DisplayRequestDetails> {
     });
   }
 
-  // ----------------------------
   // Show image/file popup with X button
-  // ----------------------------
 void _showFilePopup(String url, {bool isImage = true}) {
   showDialog(
     context: context,
@@ -193,10 +196,7 @@ void _showFilePopup(String url, {bool isImage = true}) {
   );
 }
 
-
-  // ----------------------------
   // Build request detail fields
-  // ----------------------------
   @override
   Widget build(BuildContext context) {
     final labels = fieldLabels[widget.requestType];
@@ -244,7 +244,6 @@ void _showFilePopup(String url, {bool isImage = true}) {
                           return const SizedBox.shrink();
                         }
                       }
-
                       if (widget.requestType == "business_clearance_request") {
                         final ownership = _requestData!["ownershipType"];
                         final appType = _requestData!["appType"];
@@ -320,13 +319,10 @@ void _showFilePopup(String url, {bool isImage = true}) {
 
                                         try {
                                           String objectPath = fileUrl;
-
                                           if (objectPath.contains("/storage/v1/object/")) {
                                             final parts = objectPath.split("/storage/v1/object/");
-                                            objectPath = parts[1].split("/").skip(1).join("/"); // drop 'public' or 'private'
+                                            objectPath = parts[1].split("/").skip(1).join("/"); 
                                           }
-
-                                          // Clean up if the bucket name appears twice
                                           if (objectPath.startsWith("$bucketName/")) {
                                             objectPath = objectPath.replaceFirst("$bucketName/", "");
                                           }
@@ -334,7 +330,7 @@ void _showFilePopup(String url, {bool isImage = true}) {
                                           // Create signed URL
                                           final signedUrl = await supabase.storage
                                               .from(bucketName)
-                                              .createSignedUrl(objectPath, 300); // 5 minutes
+                                              .createSignedUrl(objectPath, 120);
 
                                           final isImage = fileUrl.toLowerCase().endsWith(".jpg") ||
                                               fileUrl.toLowerCase().endsWith(".jpeg") ||

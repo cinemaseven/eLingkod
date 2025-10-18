@@ -18,7 +18,7 @@ class _ChangePasswordState extends State<ChangePassword> {
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
   
-  // ★ NEW: Controllers are local to this state
+  // Initialize the TextEditingControllers
   final TextEditingController password = TextEditingController();
   final TextEditingController rePassword = TextEditingController();
 
@@ -29,23 +29,24 @@ class _ChangePasswordState extends State<ChangePassword> {
     'hasNumber': false,
   };
 
+  // Initialize and listen to local controllers
   @override
   void initState() {
     super.initState();
-    // ★ NEW: Initialize and listen to local controllers
     password.addListener(_checkPasswordValidation);
     _checkPasswordValidation();
   }
 
+  // Dispose local controllers
   @override
   void dispose() {
-    // ★ NEW: Dispose local controllers
     password.removeListener(_checkPasswordValidation);
     password.dispose();
     rePassword.dispose();
     super.dispose();
   }
 
+  // Function call to check if password is valid
   void _checkPasswordValidation() {
     setState(() {
       String text = password.text;
@@ -56,6 +57,7 @@ class _ChangePasswordState extends State<ChangePassword> {
     });
   }
 
+    // Returns password strength value
     double get _passwordStrength {
     int score = 0;
     if (_validationStatus['isLengthValid']!) score++;
@@ -65,6 +67,7 @@ class _ChangePasswordState extends State<ChangePassword> {
     return score / 4.0;
   }
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -77,7 +80,6 @@ class _ChangePasswordState extends State<ChangePassword> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     if (_formKey.currentState!.validate()) {
       try {
-        // Use the local password controller
         await Supabase.instance.client.auth.updateUser(
           UserAttributes(password: password.text.trim()),
         );
@@ -110,6 +112,7 @@ class _ChangePasswordState extends State<ChangePassword> {
     }
   }
 
+  // Builds a row showing a validation indicator
   Widget _buildValidationRow(String text, bool isValid) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 2.0),
@@ -133,7 +136,6 @@ class _ChangePasswordState extends State<ChangePassword> {
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
@@ -178,7 +180,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ],
                 ),
                 SizedBox(height: media.height * 0.03),
-                // Use local controllers
+                // New password field
                 TxtField(
                   type: TxtFieldType.services,
                   label: "New Password",
@@ -210,6 +212,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   padding: const EdgeInsets.symmetric(vertical: 10.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    // Displays password strength requirements
                     children: [
                       _buildValidationRow(
                         '8 or more characters',
@@ -248,6 +251,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                     ],
                   ),
                 ),
+                // Re-enter new password field
                 const SizedBox(height: 20),
                 TxtField(
                   type: TxtFieldType.services,
@@ -268,13 +272,14 @@ class _ChangePasswordState extends State<ChangePassword> {
                   validator: (value) {
                     final requiredError = _requiredValidator(value);
                     if (requiredError != null) return requiredError;
-                    // Compare against the local password controller
+                    // Compare passwords
                     if (value != password.text) {
                       return 'Passwords do not match';
                     }
                     return null;
                   },
                 ),
+                // Save button
                 const SizedBox(height: 30),
                 Buttons(
                   title: "Save New Password",

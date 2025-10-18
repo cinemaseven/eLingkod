@@ -23,10 +23,12 @@ class _LoginState extends State<Login> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  // Initialize the TextEditingControllers
   final TextEditingController email = TextEditingController();
   final TextEditingController contactNumber = TextEditingController();
   final TextEditingController password = TextEditingController();
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required.';
@@ -36,7 +38,6 @@ class _LoginState extends State<Login> {
 
 void _login() async {
     if (_formKey.currentState!.validate() && !_isLoading) {
-      
       setState(() {
         _isLoading = true; // Start loading
       });
@@ -67,8 +68,6 @@ void _login() async {
         );
 
         // Navigate to the HomePage. The AuthWrapper ensures correct landing 
-        // if this page were accessed directly after a system check, but for a manual 
-        // login, we push the user to the home flow.
         Navigator.of(context).pushReplacement(
           CustomPageRoute(page: const Home()),
         );
@@ -106,7 +105,6 @@ void _login() async {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: ElementColors.fontColor2,
       appBar: AppBar(
@@ -154,6 +152,7 @@ void _login() async {
                         ),
                       ),
                       SizedBox(height: media.height * 0.04),
+                      // Email / Phone number field
                       TxtField(
                         type: TxtFieldType.regis,
                         controller: useEmail ? email : contactNumber,
@@ -162,11 +161,9 @@ void _login() async {
                             ? TextInputType.emailAddress
                             : TextInputType.number,
                         validator: (value) {
-                          // Apply the required validator.
                           final requiredError = _requiredValidator(value);
                           if (requiredError != null) return requiredError;
-              
-                          // Optional: Add specific format validation.
+                          // Specific format validation.
                           if (useEmail && !RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value!)) {
                             return 'Please enter a valid email address.';
                           }
@@ -177,6 +174,7 @@ void _login() async {
                           return null;
                         },
                       ),
+                      // Password field
                       SizedBox(height: media.height * 0.02),
                       TxtField(
                         type: TxtFieldType.regis,
@@ -199,6 +197,7 @@ void _login() async {
                         ),
                         validator: _requiredValidator,
                       ),
+                      // Forgot password that navigates to reset password page when clicked
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
@@ -219,6 +218,7 @@ void _login() async {
                         ),
                       ),
                       SizedBox(height: media.height * 0.05),
+                      // Login button
                       SizedBox(
                         width: double.infinity,
                         child: Buttons(
@@ -255,6 +255,7 @@ void _login() async {
                       SizedBox(height: media.height * 0.02),
                       SizedBox(
                         width: double.infinity,
+                        // Buttons for login options
                         child: Buttons(
                           title: useEmail
                               ? "Log in using contact number"
@@ -280,6 +281,7 @@ void _login() async {
                             CustomPageRoute(page: const Signup()),
                           );
                         },
+                        // Signup text
                         child: RichText(
                           text: TextSpan(
                             text: "Don't have an account? ",

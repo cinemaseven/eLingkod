@@ -17,6 +17,8 @@ class ForgotPassword extends StatefulWidget {
 
 class _ForgotPasswordState extends State<ForgotPassword> {
   final _formKey = GlobalKey<FormState>();
+
+  // Initialize the TextEditingController
   final TextEditingController inputController = TextEditingController();
 
   String? _wrongMethodMsg; // Inline error message
@@ -27,6 +29,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     super.dispose();
   }
 
+  // Validates that the input field is not empty
   String? _requiredValidator(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'This field is required';
@@ -54,9 +57,10 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         .eq('contactNumber', input)
         .maybeSingle();
 
-    return phoneResult; // may be null
+    return phoneResult;
   }
 
+  // Function call to verify email/number before sending OTP
   Future<void> _requestOtp() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -92,7 +96,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         return;
       }
 
-      // Send OTP
+      // OTP sent verification
       if (signupMethod == 'email') {
         await AuthService().sendOtp(email: registeredEmail);
         scaffold.showSnackBar(
@@ -205,6 +209,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Input field
                       TxtField(
                         type: TxtFieldType.services,
                         label: "Email or Phone:",
@@ -237,7 +242,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   height: media.height * 0.05,
                   onClick: () {
                     setState(() {
-                      _wrongMethodMsg = null; // clear previous
+                      _wrongMethodMsg = null;
                     });
                     if (_formKey.currentState!.validate()) {
                       _requestOtp();

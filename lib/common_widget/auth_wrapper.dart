@@ -20,8 +20,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    // Use the listener for ALL routing. This is the most reliable way 
-    // to catch deep link redirects on the web platform.
+    // Use the listener for all routing
     _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       _onReceiveAuthEvent(data.event, data.session);
     });

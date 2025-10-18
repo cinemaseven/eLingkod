@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 // for textfields
 enum TxtFieldType { regis, services }
 
-// 1. TxtField is now a StatefulWidget
 class TxtField extends StatefulWidget {
   final TxtFieldType type;
   final String hint;
@@ -18,7 +17,7 @@ class TxtField extends StatefulWidget {
   final double? width;
   final double labelFontSize;
   final EdgeInsets? customPadding;
-  final String? Function(String?)? validator; // Add validator here
+  final String? Function(String?)? validator; 
 
   TxtField({
     super.key,
@@ -38,18 +37,15 @@ class TxtField extends StatefulWidget {
   });
 
   @override
-  // 2. Create the State class
   State<TxtField> createState() => _TxtFieldState();
 }
 
-// 3. The private State class
 class _TxtFieldState extends State<TxtField> {
-  // Move _getDecoration here
   InputDecoration _getDecoration() {
     final TextStyle errorTextStyle = TextStyle(
-      color: ElementColors.tertiary, // Use a clear, high-contrast color for errors
+      color: ElementColors.tertiary,
       fontSize: 12,
-      height: 1.2, // Ensure it takes up vertical space
+      height: 1.2,
     );
     
     switch (widget.type) {
@@ -91,10 +87,8 @@ class _TxtFieldState extends State<TxtField> {
     }
   }
 
-  // 4. Move build method here
   @override
   Widget build(BuildContext context) {
-    // 4. Use TextFormField instead of TextField for validation
     final textField = TextFormField(
       controller: widget.controller,
       keyboardType: widget.keyboardType,
@@ -103,7 +97,7 @@ class _TxtFieldState extends State<TxtField> {
       onTap: widget.onTap,
       style: const TextStyle(fontSize: 13),
       decoration: _getDecoration(),
-      validator: widget.validator, // Pass the validator
+      validator: widget.validator,
     );
 
     Widget fieldWidget = textField;
@@ -151,7 +145,6 @@ class _TxtFieldState extends State<TxtField> {
   }
 }
 
-// RadioButtons is now a StatelessWidget and returns a FormField
 class RadioButtons extends StatelessWidget {
   final String label;
   final List<String> options;
@@ -159,7 +152,7 @@ class RadioButtons extends StatelessWidget {
   final Function(String?) onChanged;
   final bool inline;
   final bool showOther;
-  final String? Function(String?)? validator; // New: Add validator
+  final String? Function(String?)? validator;
 
   const RadioButtons({
     super.key,
@@ -169,7 +162,7 @@ class RadioButtons extends StatelessWidget {
     required this.onChanged,
     this.inline = false,
     this.showOther = false,
-    this.validator, // New: Add validator
+    this.validator,
   });
 
   @override
@@ -192,12 +185,10 @@ class RadioButtons extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              // Use a stateful builder to manage the internal state of the radio buttons
               StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   return Column(
                     children: [
-                      // Inline style
                       if (inline)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -258,14 +249,12 @@ class RadioButtons extends StatelessWidget {
                                       }
                                       return null;
                                     },
-                                    // 👇 Update the FormField and external onChanged with full "Other: <text>"
-                                    onTap: () {}, // keeps tap behavior if needed
+                                    onTap: () {},
                                   ),
                                 ),
                             ],
                           ],
                         ),
-                      // Stacked style
                       if (!inline) ...[
                         ...options.map((option) {
                           return RadioListTile<String>(
@@ -292,7 +281,6 @@ class RadioButtons extends StatelessWidget {
                           ),
                         ],
                       ],
-                      // New: Show error text
                       if (state.hasError)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0, left: 16.0),
@@ -313,7 +301,6 @@ class RadioButtons extends StatelessWidget {
   }
 }
 
-// The main CheckBoxes FormField
 class CheckBoxes extends FormField<List<String>> {
   CheckBoxes({
     super.key,
@@ -336,7 +323,6 @@ class CheckBoxes extends FormField<List<String>> {
         );
 }
 
-// Internal StatefulWidget to manage the checkbox state
 class _CheckBoxesContent extends StatefulWidget {
   final String label;
   final List<String> options;
@@ -364,7 +350,6 @@ class _CheckBoxesContentState extends State<_CheckBoxesContent> {
   @override
   void initState() {
     super.initState();
-    // Initialize the selected values if the form field has a pre-existing value
     selectedValues = widget.formFieldState.value ?? [];
     otherController.addListener(() {
       _updateOtherValue();
@@ -384,13 +369,9 @@ class _CheckBoxesContentState extends State<_CheckBoxesContent> {
   }
 
   void _updateOtherValue() {
-    // This method handles adding/removing the 'Other' text to the selected values.
-    // It's called whenever the 'other' text field changes.
     setState(() {
       final otherText = "Other: ${otherController.text}";
-      // Remove the old 'Other' value
       selectedValues.removeWhere((v) => v.startsWith("Other:"));
-      // Add the new 'Other' value if the text field is not empty
       if (otherController.text.isNotEmpty) {
         selectedValues.add(otherText);
       }
@@ -456,7 +437,6 @@ class _CheckBoxesContentState extends State<_CheckBoxesContent> {
                 controller: otherController,
                 hint: "Please specify",
                 validator: (value) {
-                  // Validate the 'Other' text field only when 'Other' is selected
                   if (otherSelected && (value == null || value.isEmpty)) {
                     return "Please specify the 'Other' option.";
                   }
@@ -464,7 +444,6 @@ class _CheckBoxesContentState extends State<_CheckBoxesContent> {
                 },
               ),
           ],
-          // Show error text from the FormFieldState
           if (widget.formFieldState.hasError)
             Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 16.0),

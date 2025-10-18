@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseUploadService {
@@ -33,7 +34,6 @@ class SupabaseUploadService {
 
       return publicUrl;
     } catch (e) {
-      print('❌ Upload failed for $folderName in $bucketName: $e');
       return null;
     }
   }

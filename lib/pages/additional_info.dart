@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:elingkod/common_style/colors_extension.dart';
 import 'package:elingkod/common_widget/buttons.dart';
 import 'package:elingkod/common_widget/custom_pageRoute.dart';
@@ -36,6 +37,7 @@ class _AdditionalInfoState extends State<AdditionalInfo> {
 
   final UserDataService _userDataService = UserDataService();
 
+  // Initialize the TextEditingControllers
   final Map<String, TextEditingController> _seniorControllers = {};
   final Map<String, TextEditingController> _pwdFrontControllers = {};
 

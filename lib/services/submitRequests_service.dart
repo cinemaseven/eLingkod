@@ -52,7 +52,7 @@ class BarangayClearanceRequest {
     this.status = 'Pending', 
   });
 
-  // Method to map data to Supabase column names (restored your original camelCase keys)
+  // Method to map data to Supabase column names
   Map<String, dynamic> toMap() {
     return {
       'user_id': user_id,
@@ -488,10 +488,8 @@ class SubmitRequestService {
       );
 
       await _submitRequest('business_clearance_request', request.toMap());
-    } catch (e) { // <-- CATCH BLOCK
-    // Log the error and re-throw, or handle it here if necessary
-    print("Error during Business Clearance submission: $e");
-    rethrow; // Re-throwing ensures the UI layer can catch it and show a SnackBar.
+    } catch (e) {
+    rethrow;
     }
   }
 }

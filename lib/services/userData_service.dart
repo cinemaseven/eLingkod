@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Defines the data structure for the user's profile for type safety.
-// This should match the columns in your 'user_details' Supabase table.
 class UserDetails {
   final String? user_id;
   final String? signUp_method;
@@ -92,7 +90,6 @@ class UserDetails {
     );
   }
 
-  // new edited values
   UserDetails copyWith({
     String? user_id,
     String? signUp_method,
@@ -227,8 +224,8 @@ class UserDataService {
         throw Exception("PWD ID images are required but missing.");
       }
     }
-
-    // CONSTRUCT FINAL DATA PAYLOAD with CORRECT keys matching the database
+    
+    // Constructs final data payload with correct keys matching the database
     final Map<String, dynamic> finalProfileData = {
       'user_id': user.id,
       'signUp_method': initialProfileData['signUp_method'],
@@ -258,7 +255,7 @@ class UserDataService {
       'backPWDImageURL': isPwd ? backPWDImageUrl : null,
     };
     
-    // UPDATE/INSERT DATA into the user_details table
+    // Update/insert data into the user_details table
     final response = await _supabase
         .from('user_details')
         .upsert(finalProfileData)
@@ -267,7 +264,7 @@ class UserDataService {
       print('Upsert response: $response');
 
         
-    // UPDATE USER METADATA (marks onboarding as complete)
+    // Update/insert metadata and marks onboarding as complete
     await _supabase.auth.updateUser(
       UserAttributes(
         data: {'onboarding_complete': true},
@@ -282,24 +279,15 @@ class UserDataService {
 
     // pag-iuupdate ung info
     final dataToUpdate = {
-      'user_id': user.id, // needed for upsert
-      //'gender': updatedData['gender'],
-      //'birthDate': updatedData['dob'],
-      //'birthPlace': updatedData['pob'],
-      //'contactNumber': updatedData['contact'],
+      'user_id': user.id,
       'civilStatus': updatedData['civil'],
       'voterStatus': updatedData['voter'],
-      //'province': updatedData['citizenship'], // depends how you want to map
-      // 'address': updatedData['address'], // optional if your schema splits this
-      //'email': updatedData['email'],     // only if you keep email here
     };
 
     final response = await _supabase
         .from('user_details')
         .upsert(dataToUpdate)
         .select();
-
-    print("Update response: $response");
   }
 
   /// Fetches the current user's complete profile data from the 'user_details' table.
